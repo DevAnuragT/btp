@@ -1,0 +1,28 @@
+[
+  {
+    "threshold": 0.45000000000000007,
+    "best_hour_level_f1": 0.7798700216630562,
+    "best_hour_level_accuracy": 0.7553703703703704,
+    "best_hour_level_precision": 0.6822157434402333,
+    "best_hour_level_recall": 0.9101516919486581,
+    "best_exact_24h_match_rate": 0.24444444444444444,
+    "best_mean_absolute_hour_count_error": 5.053333333333334,
+    "inference_ms_per_sequence": 4.566343095567491,
+    "parameters": 87489,
+    "name": "mamba_ssm_selective",
+    "display_name": "Mamba-SSM (Selective State Space Model)"
+  },
+  {
+    "threshold": 0.5,
+    "best_hour_level_f1": 0.7997054491899853,
+    "best_hour_level_accuracy": 0.7985185185185185,
+    "best_hour_level_precision": 0.7591751135966446,
+    "best_hour_level_recall": 0.8448074679113186,
+    "best_exact_24h_match_rate": 0.29333333333333333,
+    "best_mean_absolute_hour_count_error": 4.257777777777778,
+    "inference_ms_per_sequence": 1.8122439914279513,
+    "parameters": 121601,
+    "name": "deep_bilstm_resnet",
+    "display_name": "Deep BiLSTM-ResNet (Gated Cross-Attn)"
+  }
+]

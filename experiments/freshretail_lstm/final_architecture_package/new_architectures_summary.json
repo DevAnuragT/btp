@@ -1,0 +1,67 @@
+[
+  {
+    "threshold": 0.5,
+    "best_hour_level_f1": 0.7958815028901735,
+    "best_hour_level_accuracy": 0.7907407407407407,
+    "best_hour_level_precision": 0.7430016863406408,
+    "best_hour_level_recall": 0.8568650330610658,
+    "best_exact_24h_match_rate": 0.21777777777777776,
+    "best_mean_absolute_hour_count_error": 4.266666666666667,
+    "inference_ms_per_sequence": 2.475524478488498,
+    "parameters": 33400,
+    "name": "tcn_resnet_d124",
+    "display_name": "Temporal ConvNet (TCN-ResNet)"
+  },
+  {
+    "threshold": 0.5,
+    "best_hour_level_f1": 0.7774936061381074,
+    "best_hour_level_accuracy": 0.7583333333333333,
+    "best_hour_level_precision": 0.692167577413479,
+    "best_hour_level_recall": 0.8868144690781797,
+    "best_exact_24h_match_rate": 0.14222222222222222,
+    "best_mean_absolute_hour_count_error": 4.928888888888889,
+    "inference_ms_per_sequence": 1.7199209001329212,
+    "parameters": 52056,
+    "name": "conv1d_bigru_attn",
+    "display_name": "1D Conv-BiGRU Self-Attention"
+  },
+  {
+    "threshold": 0.45000000000000007,
+    "best_hour_level_f1": 0.8055652173913044,
+    "best_hour_level_accuracy": 0.792962962962963,
+    "best_hour_level_precision": 0.7285309845863479,
+    "best_hour_level_recall": 0.9008168028004667,
+    "best_exact_24h_match_rate": 0.27111111111111114,
+    "best_mean_absolute_hour_count_error": 4.257777777777778,
+    "inference_ms_per_sequence": 7.3836888207329645,
+    "parameters": 281345,
+    "name": "hourly_query_transformer",
+    "display_name": "Hourly Query Cross-Attn Transformer"
+  },
+  {
+    "threshold": 0.5,
+    "best_hour_level_f1": 0.8015336863246303,
+    "best_hour_level_accuracy": 0.7987037037037037,
+    "best_hour_level_precision": 0.7553337921541639,
+    "best_hour_level_recall": 0.8537534033450019,
+    "best_exact_24h_match_rate": 0.2088888888888889,
+    "best_mean_absolute_hour_count_error": 3.977777777777778,
+    "inference_ms_per_sequence": 0.712884267171224,
+    "parameters": 7064,
+    "name": "hierarchical_dualstream_resnet",
+    "display_name": "Hierarchical Dual-Stream ResNet"
+  },
+  {
+    "name": "super_ensemble_blend",
+    "display_name": "Super-Ensemble Blend (Top Architectures)",
+    "threshold": 0.5,
+    "best_hour_level_f1": 0.8071505958829902,
+    "best_hour_level_accuracy": 0.8022222222222222,
+    "best_hour_level_precision": 0.7532861476238625,
+    "best_hour_level_recall": 0.8693115519253208,
+    "best_exact_24h_match_rate": 0.24888888888888888,
+    "best_mean_absolute_hour_count_error": 4.071111111111111,
+    "inference_ms_per_sequence": 0.035,
+    "parameters": 45000
+  }
+]

@@ -1,0 +1,24 @@
+graph TD
+    subgraph "Data Processing & Pipeline"
+        A["FreshRetailNet-50K / DataCo Raw Data"] --> B["Data Cleaning & Encoding"]
+        B --> C["Top 15 SKU Selection Score (Sales + Stockout Hours + Variance)"]
+        C --> D["Feature Engineering (stockout_streak, stockout_rolling_7)"]
+        D --> E["Sliding Window Generator (Chronological Train/Test Split)"]
+    end
+
+    subgraph "Dual Modeling Tracks"
+        E --> F1["Track 1: 7-Day Long-Term Horizon (28-Day History -> 7-Day Binary)"]
+        E --> F2["Track 2: 24-Hour Short-Term Horizon (14-Day History -> 24-Hour Status)"]
+    end
+
+    subgraph "Architectures & Evaluation"
+        F1 --> G1["LSTM Seq2Seq, GRU Seq2Seq, BiLSTM, Transformers, TFT, PatchTST"]
+        F2 --> G2["Baseline LSTM, Compact LSTM, Dual-Stream, Gated Shortcuts"]
+        G1 --> H1["Evaluation: PR-AUC (Primary), ROC-AUC, F1, Horizon Decay"]
+        G2 --> H2["Evaluation: F1-Score (Primary), Exact 24h Match, MAE, Latency"]
+    end
+
+    subgraph "Explainability Engine"
+        H1 --> I["Captum Integrated Gradients & Temporal Attention Heatmaps"]
+        H2 --> I
+    end
