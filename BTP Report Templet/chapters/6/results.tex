@@ -10,7 +10,11 @@ To ensure rigorous comparability across all models, we established a definitive 
 \begin{itemize}
     \item \textbf{Dataset Scope:} Evaluation was constrained to the Top 15 statistically significant store-product series to prevent learning spurious patterns from dead inventory.
     \item \textbf{Holdout Strategy:} We employed a strict chronological split. The final 15 days of the dataset were held out exclusively as a test set. 
-    \item \textbf{Optimization:} To address the extreme class imbalance inherent in retail, the framework optimized via \textbf{Focal Loss} ($\gamma = 2.0, \alpha = 0.5$) rather than standard Binary Cross-Entropy.
+    \item \textbf{Optimization:} To address the extreme class imbalance inherent in retail (where stockouts are rare compared to sufficient stock), the framework optimized via \textbf{Focal Loss} rather than standard Binary Cross-Entropy. The Focal Loss is defined mathematically as:
+    \begin{equation}
+        FL(p_t) = -\alpha_t (1 - p_t)^\gamma \log(p_t)
+    \end{equation}
+    where $p_t$ is the model's estimated probability for the stockout class. We configured the focusing parameter $\gamma = 2.0$ and the balancing factor $\alpha = 0.5$.
     \item \textbf{Dynamic Thresholding:} Instead of relying on a static $0.5$ classification threshold, the framework dynamically scanned thresholds from $0.10$ to $0.90$ on a validation set to select the optimal cutoff for F1 maximization.
 \end{itemize}
 

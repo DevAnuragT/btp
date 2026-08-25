@@ -10,13 +10,51 @@ To establish a firm foundation, we formulated a standard 24-hour prediction task
 \subsection{Baseline SimpleRNN}
 We began with the most fundamental sequential model: the Simple Recurrent Neural Network (RNN). Configured with a hidden size of 64, this baseline contained 14,744 parameters. While computationally lightweight, it struggled with the vanishing gradient problem over the 14-day sequence, achieving an Hour-Level F1-Score of 0.7750. This indicated that simple temporal routing was insufficient for capturing the complex dynamics of retail supply and demand.
 
-\subsection{Baseline LSTM}
-To address the shortcomings of the SimpleRNN, we implemented a Vanilla LSTM. Configured with a sequence length of 14 days and processing all 13 input features, the hidden dimension was set to 96. This resulted in a heavily parameterized network containing approximately 44,952 trainable parameters. Optimized via Adam and Focal Loss, this baseline achieved a much more robust performance:
-\begin{itemize}
-    \item \textbf{Hour-level F1-Score:} 0.7852
-    \item \textbf{Recall:} 0.8040
-\end{itemize}
-The gating mechanisms (Forget, Input, Output) allowed the LSTM to better retain crucial information from earlier in the 14-day window.
+\subsection{Baseline Vanilla and Canonical LSTM}
+To address the shortcomings of the SimpleRNN, we implemented a Baseline LSTM. The gating mechanisms (Forget, Input, Output) allowed the LSTM to better retain crucial information from earlier in the 14-day window. Mathematically, the LSTM cell updates its hidden state $h_t$ and cell state $c_t$ at each timestep $t$ as follows:
+
+\begin{align}
+    f_t &= \sigma(W_f \cdot [h_{t-1}, x_t] + b_f) \quad &\text{(Forget Gate)} \\
+    i_t &= \sigma(W_i \cdot [h_{t-1}, x_t] + b_i) \quad &\text{(Input Gate)} \\
+    \tilde{c}_t &= \tanh(W_c \cdot [h_{t-1}, x_t] + b_c) \quad &\text{(Candidate Cell State)} \\
+    c_t &= f_t \odot c_{t-1} + i_t \odot \tilde{c}_t \quad &\text{(Final Cell State)} \\
+    o_t &= \sigma(W_o \cdot [h_{t-1}, x_t] + b_o) \quad &\text{(Output Gate)} \\
+    h_t &= o_t \odot \tanh(c_t) \quad &\text{(Hidden State)}
+\end{align}
+
+Initially, processing all 13 input features with a hidden dimension of 96, the Vanilla LSTM contained approximately 44,952 parameters, achieving an F1-Score of 0.7852. 
+
+Following our feature reduction phase (detailed in Section 4.2), we refined this into the \textbf{Canonical LSTM}. Standardized on just 6 essential features with a hidden size of 32, this architecture unrolls over the 14-day historical window.
+
+\begin{figure}[!htbp]
+    \centering
+    \resizebox{0.9\textwidth}{!}{
+    \begin{tikzpicture}[
+        node distance=1.5cm and 2cm,
+        box/.style={rectangle, draw, thick, minimum width=2.5cm, minimum height=1cm, align=center},
+        arrow/.style={-latex, thick}
+    ]
+    % Nodes
+    \node[box, fill=blue!10] (input) {Input Sequence \\ $X_{t=1 \dots 14} \in \mathbb{R}^{14 \times 6}$};
+    \node[box, fill=green!10, right=of input] (lstm) {LSTM Layer \\ (Hidden Size: 32)};
+    \node[box, fill=orange!10, right=of lstm] (dense) {Dense Linear Head \\ $\mathbb{R}^{32} \rightarrow \mathbb{R}^{24}$};
+    \node[box, fill=red!10, right=of dense] (output) {Predicted Hourly \\ Stock Status ($Y \in \mathbb{R}^{24}$)};
+    
+    % Edges
+    \draw[arrow] (input) -- node[above] {$t=1 \dots 14$} (lstm);
+    \draw[arrow] (lstm) -- node[above] {$h_{14}$} (dense);
+    \draw[arrow] (dense) -- (output);
+    
+    % Internal LSTM loop indication
+    \draw[-latex, thick] (lstm.north) .. controls +(up:0.8cm) and +(right:0.8cm) .. (lstm.east);
+    \node[above=0.8cm of lstm] {Temporal Unrolling};
+    \end{tikzpicture}
+    }
+    \caption{The Canonical LSTM processing pipeline for 24-hour stockout prediction.}
+    \label{fig:canonical_lstm}
+\end{figure}
+
+While highly efficient (19,992 parameters, 0.7880 F1-Score), this canonical architecture forces the LSTM gates to simultaneously track both highly erratic demand spikes and strict physical inventory constraints within the same hidden state $h_t$, leading to signal interference.
 
 \subsection{Baseline Transformers}
 Given the recent dominance of self-attention mechanisms, we also evaluated heavy Transformer architectures, specifically PatchTST \cite{nie2023patchtst} and Temporal Fusion Transformers (TFT) \cite{lim2021tft}. Despite their massive capacity (over 280,000 parameters), these models underperformed the baseline LSTM, achieving F1-Scores between 0.7540 and 0.7685. The permutation-invariant nature of self-attention proved to be misaligned with the strictly continuous, short-sequence (14-day) physical depletion of retail inventory, suffering from severe over-parameterization.
@@ -61,43 +99,9 @@ Armed with a refined feature set, we began building our custom architecture bloc
 \end{tabular}
 \end{table}
 
-\subsection{The Canonical LSTM}
-
-The first major structural refinement was standardizing the LSTM on the optimized 6-feature set defined by our explainability phase. The architecture unrolls over the 14-day historical window, processing the 6-dimensional feature vector daily. 
-
-\begin{figure}[!htbp]
-    \centering
-    \resizebox{0.9\textwidth}{!}{
-    \begin{tikzpicture}[
-        node distance=1.5cm and 2cm,
-        box/.style={rectangle, draw, thick, minimum width=2.5cm, minimum height=1cm, align=center},
-        arrow/.style={-latex, thick}
-    ]
-    % Nodes
-    \node[box, fill=blue!10] (input) {Input Sequence \\ $X_{t=1 \dots 14} \in \mathbb{R}^{14 \times 6}$};
-    \node[box, fill=green!10, right=of input] (lstm) {LSTM Layer \\ (Hidden Size: 32)};
-    \node[box, fill=orange!10, right=of lstm] (dense) {Dense Linear Head \\ $\mathbb{R}^{32} \rightarrow \mathbb{R}^{24}$};
-    \node[box, fill=red!10, right=of dense] (output) {Predicted Hourly \\ Stock Status ($Y \in \mathbb{R}^{24}$)};
-    
-    % Edges
-    \draw[arrow] (input) -- node[above] {$t=1 \dots 14$} (lstm);
-    \draw[arrow] (lstm) -- node[above] {$h_{14}$} (dense);
-    \draw[arrow] (dense) -- (output);
-    
-    % Internal LSTM loop indication
-    \draw[-latex, thick] (lstm.north) .. controls +(up:0.8cm) and +(right:0.8cm) .. (lstm.east);
-    \node[above=0.8cm of lstm] {Temporal Unrolling};
-    \end{tikzpicture}
-    }
-    \caption{The Canonical LSTM processing pipeline for 24-hour stockout prediction.}
-    \label{fig:canonical_lstm}
-\end{figure}
-
-While highly efficient and a marked improvement over the baseline, this canonical architecture forces the LSTM gates to simultaneously track both highly erratic demand spikes and strict physical inventory constraints within the same hidden state, leading to signal interference.
-
 \subsection{The Final Custom LSTM: Dual-Stream Inventory Shortcut}
 
-To alleviate these conflicting pressures and honor the findings from the ML Explainability phase, we engineered our final recurrent variation: the \textbf{Dual-Stream Inventory Shortcut LSTM}. 
+To alleviate the conflicting pressures of the Canonical LSTM and honor the findings from the ML Explainability phase, we engineered our final recurrent variation: the \textbf{Dual-Stream Inventory Shortcut LSTM}. 
 
 We physically separated the 6 optimized features into a Demand Stream (4 features) and an Inventory Stream (2 features), each processed by independent LSTMs. Furthermore, because the IG heatmap proved that the final day's inventory is paramount, we engineered the \textbf{Inventory Shortcut} to route the $t=14$ inventory features entirely around the recurrent layers, directly to the final fusion layer. This prevents the LSTM's forget gates from accidentally diluting the most critical piece of data.
 
@@ -148,7 +152,18 @@ Having maximized the potential of recurrent networks, we shifted our methodology
 
 \subsection{Standard DLinear}
 
-Standard DLinear separates the input sequence into a Trend component (extracted via a moving average kernel) and a Residual component (original sequence minus trend). It maps these components directly to the 24-hour prediction horizon via independent linear layers, making it fast and interpretably transparent.
+Standard DLinear separates the input sequence $X$ into a Trend component $X_{trend}$ (extracted via a moving average kernel) and a Residual (Seasonal) component $X_{seasonal}$. Mathematically, this is expressed as:
+
+\begin{align}
+    X_{trend} &= \text{AvgPool1D}(X) \\
+    X_{seasonal} &= X - X_{trend}
+\end{align}
+
+It then maps these components directly to the 24-hour prediction horizon via independent linear layers ($W_{trend}, W_{seasonal}$), making it fast and interpretably transparent:
+
+\begin{equation}
+    Y_{pred} = (W_{trend} \cdot X_{trend}) + (W_{seasonal} \cdot X_{seasonal})
+\end{equation}
 
 \begin{figure}[!htbp]
     \centering
@@ -190,7 +205,11 @@ Standard DLinear separates the input sequence into a Trend component (extracted 
 
 \subsection{Multi-Kernel DLinear}
 
-To further optimize DLinear for the high volatility of retail stockouts, we engineered the \textbf{Multi-Kernel DLinear}. This architecture utilizes multiple, parallel moving average kernels ($k=3, 5, 7$) to simultaneously capture short-term panic buying and smoother weekly trends, representing our final methodological advancement.
+To further optimize DLinear for the high volatility of retail stockouts, we engineered the \textbf{Multi-Kernel DLinear}. This architecture utilizes multiple, parallel moving average kernels (e.g., $k=3, 5, 7$) to simultaneously capture short-term panic buying and smoother weekly trends. The trend component becomes a concatenated representation of these multiple resolutions:
+
+\begin{equation}
+    X_{trend} = \text{Concat}(\text{AvgPool1D}_{k=3}(X), \text{AvgPool1D}_{k=5}(X), \text{AvgPool1D}_{k=7}(X))
+\end{equation}
 
 \begin{figure}[!htbp]
     \centering

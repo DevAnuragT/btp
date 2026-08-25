@@ -11,6 +11,16 @@ To systematically address the limitations of prior models and solve the high-fre
     \item \textbf{Deliver an Operationally Deployable Solution:} To identify and finalize a single, highly efficient, and interpretable model (ultimately the Multi-Kernel DLinear) that maximizes the Hour-Level F1-Score while minimizing computational overhead, making it viable for live deployment in a micro-fulfillment environment.
 \end{enumerate}
 
+\section{Problem Formulation}
+
+Given a multi-variate time-series of historical retail signals $X \in \mathbb{R}^{T \times D}$, where $T=14$ days is the historical window and $D$ is the number of features, the objective is to learn a mapping function $f: X \rightarrow Y$. 
+
+The target $Y$ is a high-resolution, 24-dimensional binary vector representing the exact hourly stock availability for the next operational day ($T+1$):
+\begin{equation}
+    Y = [y_1, y_2, \dots, y_{24}]^T \quad \text{where} \quad y_i \in \{0, 1\}
+\end{equation}
+Here, $y_i = 1$ indicates a stockout event during hour $i$, and $y_i = 0$ indicates sufficient inventory.
+
 \section{Dataset Overview}
 
 To achieve these objectives, all experiments and architectural iterations in this project utilize the \textbf{FreshRetailNet-50K} dataset. Provided by our mentor, this dataset offers an authentic representation of the complexities of modern retail.
