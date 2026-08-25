@@ -1,0 +1,12 @@
+\begin{thebibliography}{1}
+
+\bibitem{hochreiter1997long}
+S.~Hochreiter and J.~Schmidhuber, ``Long short-term memory,'' {\em Neural
+  computation}, vol.~9, no.~8, pp.~1735--1780, 1997.
+
+\bibitem{zeng2023dlinear}
+A.~Zeng, M.~Chen, L.~Zhang, and Q.~Qi, ``Are transformers effective for time
+  series forecasting?,'' in {\em Proceedings of the AAAI Conference on
+  Artificial Intelligence}, vol.~37, pp.~11121--11128, 2023.
+
+\end{thebibliography}
