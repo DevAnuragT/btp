@@ -12,6 +12,9 @@
 \usepackage{graphicx} 
 \usepackage{subcaption}
 \usepackage{booktabs}% Due to this hyberref will not work for references (PKM on 07/07/08)
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows, positioning, fit, backgrounds, decorations.pathreplacing}
+\usepackage{cite}
 \usepackage[english]{babel}
 \usepackage[small,bf]{caption}              % Added on 26/08/08
 %\usepackage{slashbox} 
@@ -77,7 +80,7 @@
 	{\bf{Abstract}}
 \end{center}
 {\em{\noindent 
-
+This project addresses the critical challenge of high-frequency intra-day stockouts in fresh retail supply chains, a domain where traditional daily-aggregated forecasting often fails. Utilizing the FreshRetailNet-50K dataset, we shifted from broad supply/backorder research to granular, store-level hourly predictions. We progressed from initial PyTorch Tabular baselines to standard recurrent models (Vanilla RNN and LSTM), establishing a foundation for explicitly handling chronological dependencies. Through rigorous architectural ablation, we engineered the Dual-Stream Inventory Shortcut LSTM, a custom architecture that processes demand and inventory signals independently while bypassing recurrent bottlenecks to route the latest inventory data directly to the output. Finally, in a standardized benchmarking framework incorporating threshold scanning and Focal Loss, we identified the Multi-Kernel DLinear (Decomposition Linear) architecture as our concluding state-of-the-art model. By capturing both short-term volatility and longer-term trends with remarkable parameter efficiency (13K parameters), the Multi-Kernel DLinear achieved a peak Hour-Level F1-Score of 0.8131, providing a highly deployable, interpretable solution for proactive shelf replenishment.
 % \par    
 
 	}}}}	
@@ -147,61 +150,45 @@
 
 %************************************************ BEGIN CHAPTERS **********************************************
 
-%\fancychapter{Introduction}
-%\chapter{Introduction}
-%\vspace{-1cm}
-%\noindent \rule{6.6in}{0.01in}
-\include{chapters/1/introduction_on_skin_segmentation}\label{chap:intro}
+\include{chapters/1/introduction}\label{chap:intro}
 \clearpage
-%\mbox{}
-\thispagestyle{empty}
-\newpage
-%\fancychapter{Literature Review}
-
-%\chapter{Literature Review}
-%\vspace{-1cm}
-%\noindent \rule{6.6in}{0.01in}
-\include{chapters/2/ReviewOnSkinSegmentation}\label{chap:L_survey}
-\clearpage
-%\mbox{}
 \thispagestyle{empty}
 \newpage
 
-%\chapter{Proposed methodology}
-%\vspace{-1cm}
-%\noindent \rule{6.6in}{0.01in}
-%\include{chapters/3/Problem_statement}\label{chap:problem_statement}
-%\clearpage
-%\mbox{}
-%\thispagestyle{empty}
-%\newpage
-
-%\chapter{Proposed Methodology}
-%\vspace{-1cm}
-%\noindent \rule{6.6in}{0.01in}
-\include{chapters/4/Proposed_method}\label{chap:problem_statement}
+\include{chapters/2/literature_review}\label{chap:l_survey}
 \clearpage
-%\mbox{}
 \thispagestyle{empty}
 \newpage
 
-%\chapter{Results}
-%\noindent \rule{6.6in}{0.01in}
-\include{chapters/5/conclusions_futurescope}\label{chap:cons_fscope}
+\include{chapters/3/thesis_objectives}\label{chap:objectives}
 \clearpage
-%\mbox{}
 \thispagestyle{empty}
 \newpage
 
-%\chapter{Discussion and Conclusions}
-%\noindent \rule{6.6in}{0.01in}
-\include{chapters/6/name}\label{chap:cons_fscope}
+\include{chapters/4/system_architecture}\label{chap:methodology}
 \clearpage
-%\mbox{}
+\thispagestyle{empty}
+\newpage
+
+\include{chapters/5/tasks_completed}\label{chap:tasks}
+\clearpage
+\thispagestyle{empty}
+\newpage
+
+\include{chapters/6/results}\label{chap:results}
+\clearpage
 \thispagestyle{empty}
 \newpage 
 
 \addtocounter{page}{-1}
+
+%************************************************ BEGIN REFERENCES **********************************************
+\renewcommand{\bibname}{References}
+\bibliographystyle{ieeetr}
+\nocite{*}
+\bibliography{references}
+% \addcontentsline{toc}{chapter}{References} % Removed as per supervisor feedback
+\clearpage
 \appendix
 %%%..........................................................................................................................................
 %\fancychapter{Appendix}\label{Sunil_Appendix}
@@ -252,20 +239,5 @@
 %\include{FrontPages/Symbols}
 %\clearpage
 %******************************************************************************************************************************************************************
-
-%**************************************************BIBLIOGRAPHY********************************************************
-\fancyhead[LE]{\bfseries\small{Bibliography}}
-\fancyhead[RO]{\bfseries\small{Bibliography}}
-\pdfbookmark[1]{Bibliography}{los}
-\addstarredchapter{Bibliography}   % PKM 05/07/08 (For more options refer minitoc.pdf on page 36)
-\baselineskip 14pt   %12, 18 and 24
-\small
-\bibliographystyle{IEEEtran}
-\bibliographystyle{unsrt}
-\bibliography{chapters/references/MyBibliography_database_Maninder}
-%\clearpage
-%**************************************************PUBLICATIONS****************************************************************************************************************
-
-
 
 \end{document}
