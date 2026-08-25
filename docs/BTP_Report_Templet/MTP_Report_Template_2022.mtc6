@@ -1,0 +1,10 @@
+{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {4.1}Baseline Analysis}{\reset@font\mtcSfont 8}{section.4.1}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {4.1.1}Standard LSTM Configuration and Performance}{\reset@font\mtcSSfont 8}{subsection.4.1.1}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {4.1.2}Systematic Exploration of RNN Variations}{\reset@font\mtcSSfont 9}{subsection.4.1.2}}
+{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {4.2}ML Explainability and Feature Importance}{\reset@font\mtcSfont 9}{section.4.2}}
+{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {4.3}Proposed Recurrent Architectures (LSTMs)}{\reset@font\mtcSfont 11}{section.4.3}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {4.3.1}The Canonical LSTM}{\reset@font\mtcSSfont 11}{subsection.4.3.1}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {4.3.2}The Dual-Stream Inventory Shortcut LSTM}{\reset@font\mtcSSfont 11}{subsection.4.3.2}}
+{\reset@font\mtcSfont\mtc@string\contentsline{section}{\noexpand \leavevmode \numberline {4.4}DLinear (Decomposition Linear) Architectures}{\reset@font\mtcSfont 12}{section.4.4}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {4.4.1}Standard DLinear}{\reset@font\mtcSSfont 12}{subsection.4.4.1}}
+{\reset@font\mtcSSfont\mtc@string\contentsline{subsection}{\noexpand \leavevmode \numberline {4.4.2}Multi-Kernel DLinear}{\reset@font\mtcSSfont 12}{subsection.4.4.2}}

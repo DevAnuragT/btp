@@ -1,0 +1,68 @@
+\chapter{Results and Conclusion}
+\label{chap:results}
+
+As the project evolved, it became imperative to benchmark our custom recurrent architectures against modern state-of-the-art linear models. This chapter outlines the standardized experimental framework used for final evaluation, presents the quantitative results, and delivers the final conclusion.
+
+\section{Standardized Evaluation Framework}
+
+To ensure rigorous comparability across all models, we established a definitive and strictly standardized evaluation framework. This framework eliminated metric inflation caused by data leakage or skewed metric selection:
+\begin{itemize}
+    \item \textbf{Dataset Scope:} Evaluation was constrained to the Top 15 statistically significant store-product series to prevent learning spurious patterns from dead inventory.
+    \item \textbf{Holdout Strategy:} We employed a strict chronological split. The final 15 days of the dataset were held out exclusively as a test set. 
+    \item \textbf{Optimization:} To address the extreme class imbalance inherent in retail, the framework optimized via \textbf{Focal Loss} ($\gamma = 2.0, \alpha = 0.5$) rather than standard Binary Cross-Entropy.
+    \item \textbf{Dynamic Thresholding:} Instead of relying on a static $0.5$ classification threshold, the framework dynamically scanned thresholds from $0.10$ to $0.90$ on a validation set to select the optimal cutoff for F1 maximization.
+\end{itemize}
+
+\section{Final Empirical Results}
+
+We tested our primary recurrent models against several variants of the DLinear architecture (as modeled in Chapter 4). The performance metrics and parameter counts are detailed in Table \ref{tab:final_variants}.
+
+\begin{table}[!htbp]
+\centering
+\caption{Performance Comparison of Final Evaluated Architectures}
+\label{tab:final_variants}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Architecture} & \textbf{Parameters} & \textbf{Hour-Level F1} \\
+\midrule
+Vanilla LSTM & 44,952 & 0.7850 \\
+Dual-Stream Inventory Shortcut LSTM & 4,600 & 0.7941 \\
+Standard DLinear & 6,768 & 0.7932 \\
+Hourly Slot-Specific DLinear & 6,744 & 0.8058 \\
+\textbf{Multi-Kernel DLinear} & \textbf{13,539} & \textbf{0.8131} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.75\textwidth]{../btp-repo/docs/images/lstm_vs_dlinear_comparison.png}
+    \caption{Final Empirical Comparison: The linear architectures systematically outperform the recurrent LSTM bounds.}
+    \label{fig:final_comparison}
+\end{figure}
+
+The empirical results conclusively identified the \textbf{Multi-Kernel DLinear} as the superior model. Achieving a peak F1-Score of \textbf{0.8131} with only 13,539 parameters, it successfully outperformed both our custom Dual-Stream recurrent architecture and all standard baseline architectures (as visualized in Figure \ref{fig:final_comparison}). 
+
+Furthermore, a broader comparison across all tested model families (Figure \ref{fig:family_comparison}) highlights that while recurrent models plateau in this specific environment, linear models offer superior parameter efficiency and overall forecasting accuracy for granular retail sequences.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.75\textwidth]{../btp-repo/docs/images/hourly_f1_vs_params_by_family.png}
+    \caption{Broad comparison across model families, illustrating the parameter-efficiency dominance of DLinear variants on the FreshRetailNet-50K task.}
+    \label{fig:family_comparison}
+\end{figure}
+
+\section{Conclusion}
+
+This thesis addressed the highly demanding operational challenge of forecasting intra-day stockouts in modern, high-frequency fresh retail supply chains. By deliberately abandoning daily aggregate modeling (e.g., traditional C1 supply/backorder research) and embracing store-level, hour-wise granular prediction, we tackled a genuine industry bottleneck where short-term inventory availability directly dictates customer retention.
+
+Our sequential progression through various architectural paradigms yielded several critical insights:
+\begin{enumerate}
+    \item \textbf{Feature Curation over Capacity:} Systematic ablation proved that aggressive feature reduction is significantly more effective at increasing robustness than arbitrarily increasing recurrent hidden sizes.
+    \item \textbf{The Power of Architectural Routing:} By explicitly separating volatile demand features from physical inventory features, and crucially, routing the latest (Day 14) inventory status directly to the final fusion layer, we overcame recurrent signal dilution.
+    \item \textbf{The Linear State-of-the-Art:} In a highly standardized, chronological holdout benchmarking environment, we proved that Decomposition Linear (DLinear) models are currently superior to recurrent bounds for this specific task. 
+\end{enumerate}
+
+While the Dual-Stream Inventory Shortcut LSTM represents our primary structural innovation in recurrent design, the \textbf{Multi-Kernel DLinear} stands as our final, definitive concluding model recommended for live deployment. Operating entirely without recurrent hidden states, it requires only 13,539 parameters, minimizing the risk of overfitting on localized store noise. By utilizing parallel kernels, it natively handles the restricted 14-day input window, simultaneously capturing rapid panic-buying volatility and longer promotional trends, culminating in the highest overall Hour-Level F1-Score of 0.8131. 
+
+By predicting the exact hour a shelf will empty, this forecasting pipeline enables fresh retail managers to schedule preemptive, intra-day replenishments. Ultimately, this directly mitigates perishable spoilage, minimizes dead stock, and guarantees maximum supply availability during peak consumer demand.

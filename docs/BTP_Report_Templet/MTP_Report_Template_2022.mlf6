@@ -1,0 +1,2 @@
+{\reset@font\mlffont\mtc@string\contentsline{figure}{\noexpand \leavevmode \numberline {6.1}{\ignorespaces Final Empirical Comparison: The linear architectures systematically outperform the recurrent LSTM bounds.}}{\reset@font\mlffont 17}{figure.caption.13}}
+{\reset@font\mlffont\mtc@string\contentsline{figure}{\noexpand \leavevmode \numberline {6.2}{\ignorespaces Broad comparison across model families, illustrating the parameter-efficiency dominance of DLinear variants on the FreshRetailNet-50K task.}}{\reset@font\mlffont 18}{figure.caption.14}}

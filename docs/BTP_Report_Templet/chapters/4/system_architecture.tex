@@ -1,0 +1,232 @@
+\chapter{System Architecture and Methodology}
+\label{chap:methodology}
+
+This chapter details the architectural engineering undertaken to adapt sequence models specifically for the FreshRetailNet-50K high-frequency stockout task. We strictly follow a logical progression: beginning with baseline evaluations, utilizing machine learning explainability to guide our feature curation, engineering custom recurrent networks, and ultimately exploring state-of-the-art linear architectures.
+
+\section{Baseline Analysis}
+
+Following the literature, we firmly grounded our initial methodology in recurrent architectures. We formulated a standard 24-hour prediction task utilizing 14 days of historical data. We evaluated foundational architectures to establish our benchmarks: the Vanilla RNN and the Vanilla LSTM.
+
+\subsection{Standard LSTM Configuration and Performance}
+
+Our primary recurrent baseline was the Vanilla LSTM. It was configured with a sequence length of 14 days and initially processed 13 input features. The hidden dimension was set to 96, resulting in a heavily parameterized network containing approximately 44,952 trainable parameters. Optimized via Adam and Focal Loss, the baseline achieved robust initial performance:
+
+\begin{itemize}
+    \item \textbf{Hour-level F1-Score:} 0.785
+    \item \textbf{Recall:} 0.804
+    \item \textbf{Exact 24-hour Match Rate:} 30.2\%
+\end{itemize}
+
+\subsection{Systematic Exploration of RNN Variations}
+
+Before designing custom LSTMs, we systematically evaluated several SimpleRNN variations to test if a lighter, faster architecture could match the 44K-parameter LSTM baseline. 
+
+\begin{table}[!htbp]
+\centering
+\caption{Performance Comparison of SimpleRNN Variations}
+\label{tab:rnn_variations}
+\begin{tabular}{llrr}
+\toprule
+\textbf{Variation} & \textbf{Architecture} & \textbf{Parameters} & \textbf{Mean F1} \\
+\midrule
+1 & SimpleRNN, hidden size 32 & 2,360 & 0.7703 \\
+2 & SimpleRNN, hidden size 64 & 6,744 & 0.7836 \\
+3 & Dual-stream SimpleRNN & 5,016 & 0.7782 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.75\textwidth]{../btp-repo/docs/images/normal_lstm_variations_comparison.png}
+    \caption{Distribution of Empirical F1-Scores across standard RNN and LSTM Baseline Variations.}
+    \label{fig:rnn_variations_plot}
+\end{figure}
+
+The final variation evaluated in this series was the \textbf{Dual-Stream SimpleRNN}. This variation introduced a novel concept to our research: architectural separation. Instead of processing all features through a single bottleneck, it routed demand features and inventory features through separate RNNs. While the Dual-Stream SimpleRNN achieved a respectable mean F1 of 0.7782, it still slightly trailed the Vanilla LSTM. This insight proved that while structural separation was theoretically sound, it required advanced gating mechanisms (LSTMs).
+
+\section{ML Explainability and Feature Importance}
+
+A fundamental question early in our methodology was whether processing all 13 features was strictly necessary. Over-parameterization in retail datasets often leads to noise memorization. To investigate this and enhance our architecture scientifically, we employed ML Explainability techniques—specifically Integrated Gradients (IG)—to visualize feature importance over the 14-day sequence.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.75\textwidth]{../btp-repo/docs/images/ig_heatmap.png}
+    \caption{Integrated Gradients Heatmap revealing the disproportionate importance of recent inventory signals compared to historical static features.}
+    \label{fig:ig_heatmap}
+\end{figure}
+
+As shown in Figure \ref{fig:ig_heatmap}, the explainability heatmap revealed two critical insights that directly shaped our final models:
+1. \textbf{Recent Dominance:} Features from $t=13$ and $t=14$ (the most recent days) carried exponentially more attribution weight than historical days.
+2. \textbf{Inventory Supremacy:} Raw inventory features (like \texttt{stock\_hour6\_22\_cnt}) completely overpowered noisy demand variables.
+
+Driven by these explainability results, we aggressively pruned the input space to just 6 essential features and engineered a structural "shortcut" to explicitly preserve the Day 14 inventory state.
+
+\section{Proposed Recurrent Architectures (LSTMs)}
+
+\subsection{The Canonical LSTM}
+
+With the optimized 6-feature set defined by our explainability phase, we formalized the standard processing pipeline. The architecture unrolls over the 14-day historical window. Each day, the 6-dimensional feature vector is processed by the LSTM cell.
+
+\begin{figure}[!htbp]
+    \centering
+    \resizebox{0.9\textwidth}{!}{
+    \begin{tikzpicture}[
+        node distance=1.5cm and 2cm,
+        box/.style={rectangle, draw, thick, minimum width=2.5cm, minimum height=1cm, align=center},
+        arrow/.style={-latex, thick}
+    ]
+    % Nodes
+    \node[box, fill=blue!10] (input) {Input Sequence \\ $X_{t=1 \dots 14} \in \mathbb{R}^{14 \times 6}$};
+    \node[box, fill=green!10, right=of input] (lstm) {LSTM Layer \\ (Hidden Size: 32)};
+    \node[box, fill=orange!10, right=of lstm] (dense) {Dense Linear Head \\ $\mathbb{R}^{32} \rightarrow \mathbb{R}^{24}$};
+    \node[box, fill=red!10, right=of dense] (output) {Predicted Hourly \\ Stock Status ($Y \in \mathbb{R}^{24}$)};
+    
+    % Edges
+    \draw[arrow] (input) -- node[above] {$t=1 \dots 14$} (lstm);
+    \draw[arrow] (lstm) -- node[above] {$h_{14}$} (dense);
+    \draw[arrow] (dense) -- (output);
+    
+    % Internal LSTM loop indication
+    \draw[-latex, thick] (lstm.north) .. controls +(up:0.8cm) and +(right:0.8cm) .. (lstm.east);
+    \node[above=0.8cm of lstm] {Temporal Unrolling};
+    \end{tikzpicture}
+    }
+    \caption{The Canonical LSTM processing pipeline for 24-hour stockout prediction.}
+    \label{fig:canonical_lstm}
+\end{figure}
+
+While efficient, this canonical architecture forces the LSTM gates to simultaneously track both highly erratic demand spikes and strict physical constraints.
+
+\subsection{The Dual-Stream Inventory Shortcut LSTM}
+
+To alleviate these conflicting pressures and honor the findings from the ML Explainability phase, we conceptualized the \textbf{Dual-Stream Inventory Shortcut LSTM}. 
+
+We physically separated the 6 optimized features into a Demand Stream (4 features) and an Inventory Stream (2 features), each processed by independent LSTMs. Furthermore, because the IG heatmap proved that the final day's inventory is paramount, we engineered the \textbf{Inventory Shortcut} to route the $t=14$ inventory features entirely around the recurrent layers, directly to the final fusion layer.
+
+\begin{figure}[!htbp]
+    \centering
+    \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[
+        node distance=1.5cm and 1cm,
+        box/.style={rectangle, draw, thick, minimum width=2.5cm, minimum height=1cm, align=center},
+        arrow/.style={-latex, thick}
+    ]
+    % Inputs
+    \node[box, fill=blue!10] (demand_in) {Demand Features \\ $X_{demand} \in \mathbb{R}^{14 \times 4}$};
+    \node[box, fill=blue!10, below=1.5cm of demand_in] (inv_in) {Inventory Features \\ $X_{inv} \in \mathbb{R}^{14 \times 2}$};
+    
+    % LSTMs
+    \node[box, fill=green!10, right=1.5cm of demand_in] (demand_lstm) {Demand LSTM \\ $h = 16$};
+    \node[box, fill=green!10, right=1.5cm of inv_in] (inv_lstm) {Inventory LSTM \\ $h = 16$};
+    
+    % Concat and Output
+    \node[box, fill=yellow!20, right=2cm of demand_lstm, yshift=-1.25cm] (concat) {Concatenation \\ Fusion Layer};
+    \node[box, fill=orange!10, right=1.5cm of concat] (dense) {Linear Head};
+    \node[box, fill=red!10, right=1.5cm of dense] (output) {$Y \in \mathbb{R}^{24}$};
+    
+    % Standard Paths
+    \draw[arrow] (demand_in) -- (demand_lstm);
+    \draw[arrow] (inv_in) -- (inv_lstm);
+    \draw[arrow] (demand_lstm.east) -- ++(1,0) |- (concat.160);
+    \draw[arrow] (inv_lstm.east) -- ++(1,0) |- (concat.200);
+    
+    % Shortcut Path
+    \draw[arrow, dashed, thick, blue] (inv_in.south) -- ++(0,-0.8) -| node[pos=0.25, above, text=blue, font=\small] {Inventory Shortcut (Extract $t=14$)} (concat.south);
+    
+    % Final Paths
+    \draw[arrow] (concat) -- (dense);
+    \draw[arrow] (dense) -- (output);
+    \end{tikzpicture}
+    }
+    \caption{The Dual-Stream Inventory Shortcut LSTM Architecture. Notice the dashed shortcut preserving the $t=14$ state.}
+    \label{fig:dual_stream_lstm}
+\end{figure}
+
+This architecture reduced parameters to 4,600 and boosted the F1-Score to 0.7941, definitively outperforming the canonical approach.
+
+\section{DLinear (Decomposition Linear) Architectures}
+
+To comprehensively benchmark our custom recurrent models, we implemented modern Decomposition Linear (DLinear) variants. 
+
+\subsection{Standard DLinear}
+
+Standard DLinear separates the input sequence into a Trend component (moving average) and a Residual component (original minus trend). It achieves forecasting without recurrent states, making it fast and interpretably transparent.
+
+\begin{figure}[!htbp]
+    \centering
+    \resizebox{0.9\textwidth}{!}{
+    \begin{tikzpicture}[
+        node distance=1cm and 1.5cm,
+        box/.style={rectangle, draw, thick, minimum width=2.5cm, minimum height=1cm, align=center},
+        arrow/.style={-latex, thick}
+    ]
+    % Input
+    \node[box, fill=blue!10] (input) {Input Sequence \\ $X$};
+    
+    % Decomposition
+    \node[box, fill=gray!20, right=1.5cm of input] (ma) {Moving Average \\ (Trend Extraction)};
+    \node[box, fill=gray!10, below=1cm of ma] (residual) {Subtraction \\ ($X - Trend$)};
+    
+    % Linear Layers
+    \node[box, fill=green!10, right=1.5cm of ma] (linear_trend) {Linear Layer \\ (Trend)};
+    \node[box, fill=green!10, right=1.5cm of residual] (linear_res) {Linear Layer \\ (Residual)};
+    
+    % Output
+    \node[box, fill=yellow!20, right=1.5cm of linear_trend, yshift=-1cm] (add) {Addition \\ (Trend + Residual)};
+    \node[box, fill=red!10, right=1cm of add] (output) {Final Prediction \\ $Y \in \mathbb{R}^{24}$};
+    
+    % Edges
+    \draw[arrow] (input) -- (ma);
+    \draw[arrow] (input) |- (residual);
+    \draw[arrow] (ma) -- node[left] {$-$} (residual);
+    \draw[arrow] (ma) -- (linear_trend);
+    \draw[arrow] (residual) -- (linear_res);
+    \draw[arrow] (linear_trend.east) -- ++(0.5,0) |- (add.160);
+    \draw[arrow] (linear_res.east) -- ++(0.5,0) |- (add.200);
+    \draw[arrow] (add) -- (output);
+    \end{tikzpicture}
+    }
+    \caption{The Standard DLinear Architecture. Trend and residual mapped via independent linear layers.}
+    \label{fig:dlinear_arch}
+\end{figure}
+
+\subsection{Multi-Kernel DLinear}
+
+To further optimize DLinear for the high volatility of retail stockouts, we engineered the \textbf{Multi-Kernel DLinear}. This architecture utilizes multiple, parallel moving average kernels ($k=3, 5, 7$) to simultaneously capture short-term panic buying and smoother weekly trends.
+
+\begin{figure}[!htbp]
+    \centering
+    \resizebox{0.8\textwidth}{!}{
+    \begin{tikzpicture}[
+        node distance=0.8cm and 1cm,
+        box/.style={rectangle, draw, thick, minimum width=2.5cm, minimum height=0.8cm, align=center},
+        arrow/.style={-latex, thick}
+    ]
+    % Input
+    \node[box, fill=blue!10] (input) {Input $X$};
+    
+    % Kernels
+    \node[box, fill=gray!20, right=1.5cm of input, yshift=1.5cm] (ma3) {MA Kernel ($k=3$)};
+    \node[box, fill=gray!20, right=1.5cm of input] (ma5) {MA Kernel ($k=5$)};
+    \node[box, fill=gray!20, right=1.5cm of input, yshift=-1.5cm] (ma7) {MA Kernel ($k=7$)};
+    
+    % Concat
+    \node[box, fill=yellow!20, right=1.5cm of ma5] (concat) {Concatenate Trends};
+    
+    % Linear
+    \node[box, fill=green!10, right=1.5cm of concat] (linear) {Linear Head $\rightarrow Y$};
+    
+    % Edges
+    \draw[arrow] (input.east) -- ++(0.5,0) |- (ma3.west);
+    \draw[arrow] (input) -- (ma5);
+    \draw[arrow] (input.east) -- ++(0.5,0) |- (ma7.west);
+    \draw[arrow] (ma3.east) -- ++(0.5,0) |- (concat.150);
+    \draw[arrow] (ma5) -- (concat);
+    \draw[arrow] (ma7.east) -- ++(0.5,0) |- (concat.210);
+    \draw[arrow] (concat) -- (linear);
+    \end{tikzpicture}
+    }
+    \caption{The Multi-Kernel DLinear extraction phase. Multiple kernels capture volatility at different frequencies.}
+    \label{fig:multi_kernel_dlinear}
+\end{figure}

@@ -1,0 +1,24 @@
+\chapter{Introduction}
+\label{chap:intro}
+
+\section{Introduction}
+
+In the rapidly evolving landscape of modern retail, the paradigm has decisively shifted from traditional brick-and-mortar storefronts to high-frequency, ultra-fast delivery models. Services such as instant grocery delivery (often termed ``q-commerce" or quick commerce) promise consumers fulfillment times ranging from ten to thirty minutes. This extraordinary speed necessitates a highly localized, densely distributed network of micro-fulfillment centers, colloquially known as "dark stores." 
+
+Within this high-stakes environment, inventory management ceases to be a mere logistical optimization problem and instead becomes the primary bottleneck for operational viability and customer retention. Traditional retail forecasting systems are designed to operate on a daily or weekly aggregate basis. If a conventional supermarket runs out of a specific brand of milk at 6:00 PM but restocks it by 7:00 AM the following day, the daily ledger simply records a high sales volume, entirely masking the stockout period. 
+
+However, in quick commerce, a four-hour stockout during peak evening hours directly translates to unfulfilled customer carts, abandoned sessions, and immediate customer churn to competing platforms. Consequently, a predictive model that merely outputs aggregate daily demand is fundamentally inadequate. The true operational requirement is a highly granular, intra-day forecasting engine capable of predicting not just \textit{how much} will be sold tomorrow, but \textit{exactly when} a specific shelf will empty. 
+
+This project explores the development, optimization, and evaluation of sequential deep learning architectures designed specifically to solve this high-frequency store-level stockout prediction problem. Leveraging the FreshRetailNet-50K dataset, we transition from broad, traditional supply/backorder research to highly specific, hour-wise granular prediction.
+
+\section{Motivation}
+
+The core motivation for this research stems from the massive financial and operational inefficiencies inherent in current fresh retail supply chains. Fresh produce and perishable goods suffer from extremely short shelf lives. If inventory managers over-stock to prevent shortages, they incur devastating spoilage and wastage costs. Conversely, if they under-stock to minimize spoilage, they risk critical intra-day stockouts, which in the context of instant delivery, results in permanent customer loss.
+
+Early in our research, we attempted to utilize existing inventory forecasting paradigms, often referred to collectively in this thesis as the ``C1 supply and backorder research." While foundational, these classical models were fundamentally misaligned with the realities of modern dark stores. They treated time as a static variable and demand as a uniform distribution across the day. 
+
+When we applied a non-sequential, Tabular Transformer baseline to the FreshRetailNet-50K dataset (utilizing 96 hidden dimensions, 2 transformer layers, and 4 attention heads), it yielded an accuracy of merely 55.83\% and an AUC of 0.5257—performance only marginally better than random guessing. This failure emphatically demonstrated that predicting stock depletion is not a standard tabular classification problem; it is a complex, temporal sequence problem governed by chronological momentum, cyclical consumption patterns, and operational noise.
+
+Thus, we were motivated to abandon static models in favor of dynamic time-series architectures—ranging from Recurrent Neural Networks (RNNs) and Long Short-Term Memory (LSTMs) to Decomposition Linear (DLinear) models—to capture the true sequential deterioration of inventory.
+
+

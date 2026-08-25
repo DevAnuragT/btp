@@ -1,0 +1,22 @@
+\chapter{Literature Survey}
+\label{chap:l_survey}
+
+The domain of retail inventory forecasting and time-series analysis has undergone a massive transformation over the past decade. This chapter surveys the academic landscape surrounding these challenges.
+
+\section{Traditional Inventory Forecasting}
+
+Historically, inventory forecasting relied heavily on statistical and heuristic models, most notably Autoregressive Integrated Moving Average (ARIMA) and Exponential Smoothing (ETS). While mathematically rigorous, these classical models are typically univariate; they struggle to incorporate exogenous variables such as promotional discounts, weather data, or holidays—features that are absolutely vital in retail. 
+
+Furthermore, traditional models are computationally expensive to scale across hundreds of thousands of distinct store-product combinations. In modern retail, a central statistical model often fails because it cannot natively learn cross-series interactions (i.e., it cannot learn that a promotion on Product A in City X behaves similarly to a promotion on Product B in City Y).
+
+\section{The Deep Learning Shift in Time-Series}
+
+To overcome the limitations of univariate statistical models, the forecasting community widely adopted deep learning techniques. 
+
+\subsection{Recurrent Neural Networks (RNNs) and LSTMs}
+Recurrent Neural Networks, particularly Long Short-Term Memory (LSTM) networks introduced by Hochreiter and Schmidhuber \cite{hochreiter1997long}, revolutionized sequential data processing. By maintaining an internal memory state and utilizing gating mechanisms (Input, Forget, and Output gates), LSTMs mitigate the vanishing gradient problem that plagued early RNNs. This allows them to capture medium-to-long-term temporal dependencies, making them the industry standard for sequential forecasting tasks.
+
+\subsection{Transformers and Linear Alternatives}
+More recently, Transformer architectures—which utilize self-attention mechanisms to process sequences in parallel—have been adapted for time-series (e.g., Informer, Autoformer). However, a seminal paper by Zeng et al. (2023) \cite{zeng2023dlinear} demonstrated that simple Decomposition Linear (DLinear) models could effectively outperform complex Transformers on various time-series benchmarks, particularly over short historical windows. This revelation heavily influenced the later stages of our research.
+
+

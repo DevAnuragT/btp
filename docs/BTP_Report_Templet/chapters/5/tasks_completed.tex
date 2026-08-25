@@ -1,0 +1,27 @@
+\chapter{Tasks Completed}
+\label{chap:tasks}
+
+To achieve the final deployed model and comprehensively explore the structural challenges of high-frequency retail forecasting, the following tasks were systematically completed over a strict three-month timeline:
+
+\begin{enumerate}
+    \item \textbf{Month 1: Initial Research and Baseline Implementation} 
+    \begin{itemize}
+        \item Researched classical C1 supply and backorder forecasting methodologies.
+        \item Processed the FreshRetailNet-50K dataset and structured it for basic classification.
+        \item Built and trained the Vanilla RNN and Vanilla LSTM architectures, establishing the primary performance baselines (44K parameters, 0.785 F1-Score).
+    \end{itemize}
+    
+    \item \textbf{Month 2: Feature Explainability and Recurrent Engineering}
+    \begin{itemize}
+        \item Utilized ML Explainability (Integrated Gradients) to aggressively prune the dataset down to 6 critical features, drastically reducing model noise.
+        \item Designed the Dual-Stream processing pipeline to structurally isolate noisy demand variables from physical inventory variables.
+        \item Finalized the \textit{Dual-Stream Inventory Shortcut LSTM}, successfully reducing parameters to 4,600 while boosting performance beyond the 44K-parameter baseline.
+    \end{itemize}
+    
+    \item \textbf{Month 3: Linear Benchmarking and Final Evaluation}
+    \begin{itemize}
+        \item Developed a strict, standardized Top-15 holdout validation framework incorporating Focal Loss and dynamic threshold scanning.
+        \item Engineered and benchmarked the \textit{Multi-Kernel DLinear} to capture both rapid retail volatility and longer multi-day trends.
+        \item Generated all quantitative metrics, boxplots, and loss trajectory graphs to definitively prove the superiority of the Multi-Kernel DLinear model, culminating in the compilation of this final thesis report.
+    \end{itemize}
+\end{enumerate}

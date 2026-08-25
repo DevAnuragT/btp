@@ -1,0 +1,25 @@
+\chapter{Thesis Objectives and Deliverables}
+\label{chap:objectives}
+
+To systematically address the limitations of prior models and solve the high-frequency stockout problem, this thesis pursues the following concrete objectives:
+
+\begin{enumerate}
+    \item \textbf{Formulate a Granular Time-Series Task:} To mathematically define the stockout problem such that the model processes a short, historically recent window (14 days) of multi-variate features to output a high-resolution, 24-hour binary vector representing the next day's hourly stock status.
+    \item \textbf{Establish Recurrent Baselines:} To train and evaluate foundational Vanilla RNN and Vanilla LSTM architectures, identifying the specific computational and structural bottlenecks that occur when processing noisy retail data.
+    \item \textbf{Develop a Custom Retail Architecture:} To engineer a specialized neural network—specifically the Dual-Stream Inventory Shortcut LSTM—that independently processes volatile demand signals from strict physical inventory signals, utilizing shortcut connections to prevent the dilution of critical recent states.
+    \item \textbf{Benchmark against State-of-the-Art Linear Models:} To implement and evaluate modern lightweight linear decomposition architectures (DLinear and Multi-Kernel DLinear) against our recurrent baselines within a highly standardized, strict-holdout validation framework.
+    \item \textbf{Deliver an Operationally Deployable Solution:} To identify and finalize a single, highly efficient, and interpretable model (ultimately the Multi-Kernel DLinear) that maximizes the Hour-Level F1-Score while minimizing computational overhead, making it viable for live deployment in a micro-fulfillment environment.
+\end{enumerate}
+
+\section{Dataset Overview}
+
+To achieve these objectives, all experiments and architectural iterations in this project utilize the \textbf{FreshRetailNet-50K} dataset. Provided by our mentor, this dataset offers an authentic representation of the complexities of modern retail.
+
+It contains detailed daily records for specific city-store-product combinations (time series). Crucially, the dataset features a blend of target-oriented signals and external operational variables:
+\begin{itemize}
+    \item \textbf{Sales and Inventory Metrics:} Raw sales amounts, historical stock statuses, and aggregated sums of daily activity.
+    \item \textbf{Promotional Data:} Discount flags and specific store activities that artificially inflate localized demand.
+    \item \textbf{External Variables:} National statutory holidays and weather conditions which impact broader consumer behavior.
+\end{itemize}
+
+By processing these diverse data streams chronologically, our architectures learn to differentiate between organic seasonal depletion and artificial promotional stockouts, paving the way for the methodological explorations detailed in the subsequent chapters.
