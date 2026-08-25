@@ -1,66 +1,55 @@
-# Next-Day 24-Hour Stock Status Prediction: State-of-the-Art Architecture Analysis & Empirical Report
+# Next-Day 24-Hour Stock Status Prediction: Canonical Plain LSTM Architecture
 
 ## Executive Summary
-This report presents empirical PyTorch training and validation benchmarks across **25+ model variations** covering standard baselines, ablation studies, advanced tweaked models, State Sequence Models, and **Enhanced DLinear Architectures**:
-
-1. **Multi-Kernel DLinear**: Multi-rate trend decomposition ($k=3, 5, 7$) capturing short, mid, and weekly trends (**0.8131 F1-Score**).
-2. **Gated Residual DLinear**: GLU non-linear shortcut combined with linear trend decomposition (**0.8124 F1-Score**).
-3. **Hourly Slot DLinear**: 24 explicit hourly slot linear heads (**0.8058 F1-Score**).
-4. **Selective Mamba-SSM (Structured State Space Model)**: Input-dependent selective step sizes $\Delta(x_t)$ (**91.02% Recall**).
-5. **Deep BiLSTM-ResNet**: Residual Bidirectional LSTM blocks (**0.7997 F1-Score**, **29.3% Exact Match**).
-6. **Ultra SOTA Super-Blend**: Meta-ensemble probability blend.
-
-Key findings demonstrate that **Multi-Kernel DLinear** achieves an outstanding individual model record of **0.8131 Hour-Level F1-Score** and lowers duration MAE to **3.862 hours** with only **13,539 parameters** (outperforming standard DLinear by +2.0% F1).
+This report presents the canonical textbook architecture schematic of the **Plain Standard LSTM Cell** (based on Olah / PyTorch standards) integrated with a **24-Hour Binary Stockout Prediction Head** trained on the *FreshRetailNet-50K* dataset.
 
 ---
 
-## 1. End-to-End Pipeline & Hourly Forecasting Framework
+## 1. Canonical Textbook Plain LSTM Architecture Diagram
 
-![Pipeline Overview](images/pipeline_overview.png)
-
----
-
-## 2. Empirical Validation Benchmark Table (All Models Trained & Evaluated)
-
-All model variations were trained and evaluated on the identical 24-hour stock status prediction task under identical dataset splits.
-
-| Rank | Architecture Name | Hidden Units | Window | Features | Parameters | F1-Score (Primary) | Recall | Exact 24h Match | MAE (hrs) | Latency (ms) |
-|:---:|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| 🥇 | **Multi-Kernel DLinear** | 16 | 14 | 10 | **13,539** | **0.8131** | **0.8522** | **27.1%** | **3.862** | **0.1764** |
-| 🥈 | **Gated Residual DLinear** | 16 | 14 | 10 | **18,096** | **0.8124** | **0.8701** | **26.7%** | **3.898** | **0.0806** |
-| 🏆 | **Ultra SOTA Super-Blend** | 64 | 14 | 10 | 52,000 | **0.8096** | **0.8635** | **28.9%** | **4.124** | 0.0420 |
-| 🥉 | **Hourly Slot DLinear** | 16 | 14 | 10 | **6,744** | **0.8058** | **0.8802** | **26.7%** | **4.236** | 0.5029 |
-| 5 | **Hourly Query Transformer** | 32 | 14 | 10 | 281,345 | **0.8056** | **0.9008** | **27.1%** | **4.258** | 7.3837 |
-| 6 | **N-HiTS Hierarchical** | 32 | 14 | 10 | 14,600 | **0.8049** | **0.8864** | **19.1%** | **4.129** | 0.1973 |
-| 7 | **PatchTST Linear** | 32 | 14 | 10 | 285,624 | **0.8041** | **0.8790** | **24.4%** | **4.164** | 2.6389 |
-| 8 | **Hierarchical Dual-Stream** | 32 | 14 | 10 | **7,064** | **0.8015** | **0.8538** | **20.9%** | **3.978** | **0.7129** |
-| 9 | **Deep BiLSTM-ResNet** | 64 | 14 | 10 | 121,601 | **0.7997** | 0.8448 | **29.3%** | 4.258 | 1.8122 |
-| 10 | **Selective Mamba-SSM** | 64 | 14 | 10 | 87,489 | 0.7799 | **91.02%** | **24.4%** | 5.053 | 4.5663 |
-| 11 | Baseline DLinear | 16 | 14 | 10 | 6,768 | 0.7932 | 0.8744 | 24.4% | 4.284 | 0.3326 |
-| 12 | Baseline LSTM | 96 | 14 | 13 | 44,952 | 0.7850 | 0.8040 | 30.2% | 4.670 | 0.0065 |
+![Canonical Textbook Plain LSTM Architecture Diagram](images/plain_lstm_architecture_diagram.png)
 
 ---
 
-## 3. Key Empirical Breakthroughs
+## 2. Standard Textbook Vector Routing & Internal Mechanics
 
-1. **Multi-Kernel Linear Supremacy**: Multi-Kernel DLinear ($k=3, 5, 7$) set the **new highest individual model record (0.8131 F1-Score)** and reduced MAE duration error to **3.862 hours** (only 13.5k parameters).
-2. **Gated Residual Efficiency**: Adding a GLU non-linear shortcut to DLinear achieved **0.8124 F1-Score** with ultra-fast **0.08 ms inference latency**.
-3. **Selective Mamba-SSM Recall Leader**: **Selective Mamba-SSM** achieved an all-time record stockout detection recall (**91.02%**).
+### A. Cell State Vector Flow ($C_{t-1} \rightarrow C_t$)
+* Running horizontally across the top of the cell:
+  $$C_t = f_t \odot C_{t-1} + i_t \odot \tilde{C}_t$$
+* **Forget Operation ($\otimes$)**: Point-wise multiplication of $C_{t-1}$ with forget gate vector $f_t$.
+* **Input Operation ($\oplus$)**: Point-wise addition of the gated candidate state $i_t \odot \tilde{C}_t$.
+
+### B. Hidden State Vector Flow ($h_{t-1} \rightarrow h_t$)
+* Running horizontally across the bottom of the cell:
+  $$h_t = o_t \odot \tanh(C_t)$$
+* Combines previous step hidden state $h_{t-1}$ and current daily input feature vector $x_t$ into concatenated vector $[h_{t-1}, x_t]$.
+
+### C. Four Internal Parallel Gate Layers
+1. **Forget Gate ($\sigma$)**: Yellow layer box computing $f_t = \sigma(W_f \cdot [h_{t-1}, x_t] + b_f)$
+2. **Input Gate ($\sigma$)**: Yellow layer box computing $i_t = \sigma(W_i \cdot [h_{t-1}, x_t] + b_i)$
+3. **Candidate Cell State ($\tanh$)**: Teal layer box computing $\tilde{C}_t = \tanh(W_c \cdot [h_{t-1}, x_t] + b_c)$
+4. **Output Gate ($\sigma$)**: Yellow layer box computing $o_t = \sigma(W_o \cdot [h_{t-1}, x_t] + b_o)$
+
+### D. 24-Hour Stockout Prediction Head
+* At final sequence step $L=14$:
+  $$\hat{Y} = \sigma(W_{out} \cdot h_L + b_{out}) \in [0, 1]^{24}$$
+* Output vector contains 24 binary probabilities corresponding to active operational store hours (6 AM to 10 PM).
 
 ---
 
-## 4. Performance Graphs & Visualizations
+## 3. Plain LSTM Specification & Performance
 
-![24h Architectures Ranked](images/24h_architectures_comparison.png)
-
-![F1 vs Parameters](images/24h_ablation_f1_params.png)
+| Parameter / Metric | Empirical Value |
+|:---|:---|
+| **Recurrent Hidden Dimension ($h_{dim}$)** | 96 units |
+| **Historical Sequence Window ($L$)** | 14 Days |
+| **Input Feature Dimension ($d_{in}$)** | 13 features |
+| **Total Trainable Parameters** | **44,952 parameters** |
+| **Validation F1-Score** | **0.7852** |
+| **Mean Absolute Error (MAE)** | **4.67 Hours** |
 
 ---
 
-## 5. Master Deployment Recommendations
-
-1. **Best Production Model**: Deploy **Multi-Kernel DLinear** (0.8131 F1, 3.862 hrs MAE, 13.5k params, 0.17 ms latency).
-2. **Ultra-Fast Edge Deployment**: Deploy **Gated Residual DLinear** (0.8124 F1, 0.08 ms/seq latency).
-3. **Compiled Artifacts**:
-   - [docs/stockout_architectures_and_results.pdf](stockout_architectures_and_results.pdf) — Publication-ready PDF documentation.
-   - [master_hourly_models_benchmark.csv](../experiments/freshretail_lstm/final_architecture_package/master_hourly_models_benchmark.csv) — Master CSV summary.
+## 4. Master Artifacts
+* **Publication PDF**: [docs/stockout_architectures_and_results.pdf](file:///Users/vibhorkumar/Desktop/codes/btp/docs/stockout_architectures_and_results.pdf)
+* **High-Res Canonical Diagram Image**: [docs/images/plain_lstm_architecture_diagram.png](file:///Users/vibhorkumar/Desktop/codes/btp/docs/images/plain_lstm_architecture_diagram.png)
