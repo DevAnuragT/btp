@@ -32,11 +32,12 @@
 #rect(width: 100%, fill: rgb("#f3f4f6"), radius: 4pt, inset: 12pt)[
   #text(weight: "bold", size: 11pt)[Executive Summary] \
   #v(4pt)
-  This report focuses *exclusively on next-day 24-hour hourly stock status prediction models* trained on the *FreshRetailNet-50K* dataset. The objective is to forecast hourly stock status (active operational hours 6 AM to 10 PM, represented as 24 binary hourly values) for individual SKU-store time series (`series_id = city_id + store_id + product_id`) using recent sequence history.
+  This report focuses *exclusively on next-day 24-hour hourly stock status prediction models* trained on the *FreshRetailNet-50K* dataset.
 
-  We present empirical training and validation benchmarks comparing *Plain Standard LSTMs vs Advanced Model Families*:
-  1. *Plain Standard LSTM*: Standard 96-hidden-unit LSTM architecture achieving *0.7852 F1-Score* (44.9k parameters).
-  2. *Detailed Mechanics*: Recurrent unrolling over $L=14$ historical days, gating mechanisms (forget $f_t$, input $i_t$, candidate $tilde(C)_t$, output $o_t$), cell state $C_t$ updates, and 24-dim linear projection head.
+  We present empirical training and validation benchmarks comparing *Linear vs. Non-Linear DLinear Variations*:
+  1. *Linear DLinear Baselines*: Standard DLinear achieves *0.7932 F1-Score* (6.7k params) and Hourly Slot-Specific DLinear achieves *0.8058 F1-Score*.
+  2. *Non-Linear DLinear Innovations*: Introducing GELU activation bottlenecks boosts F1-Score to *0.8083* and Stockout Recall to *91.37%*.
+  3. *Multi-Kernel Non-Linear DLinear*: Multi-scale non-linear trend decomposition ($k=3, 5, 7$) reaches *0.8156 F1-Score* and the lowest daily stockout duration error of *3.75 hours MAE*.
 ]
 
 #v(0.5cm)
@@ -49,44 +50,20 @@ The task moves beyond coarse daily aggregation to fine-grained hourly stock stat
 - *Target*: 24 binary hourly stock-status values for the subsequent day ($t+1$).
 - *Unit of Analysis*: SKU-store time series created by combining `series_id = city_id + store_id + product_id`.
 
-=== Top 15 SKU Statistical Selection
-To evaluate models on operationally critical demand patterns, SKUs were statistically selected using:
-$ "Score" = 0.40 dot "Sales" + 0.25 dot "StockoutHours" + 0.20 dot "StockoutDays" + 0.15 dot "SalesStd" $
+== Architectural Impact: Linear vs. Non-Linear DLinear Variations
+
+To evaluate the effect of non-linearity on series decomposition models, we benchmarked GELU, SwiGLU, and Multi-Kernel non-linear DLinear variants against standard linear models:
 
 #figure(
-  image("images/pipeline_overview.png", width: 95%),
-  caption: [End-to-End Next-Day 24-Hour Stock Status Prediction Framework]
+  image("images/nonlinear_dlinear_comparison.png", width: 95%),
+  caption: [Empirical F1-Score & Stockout Recall Comparison: Linear DLinear vs Non-Linear DLinear Variations]
 )
 
-== Plain Standard LSTM Architecture & Internal Mechanics
+=== Key Empirical Discoveries
+1. *Non-Linear GELU Bottleneck*: Adding a GELU activation layer between sequence decomposition and logit projection boosts F1-Score from *0.7932* to *0.8083* (+0.0151 gain) and sets a new record for *Stockout Recall at 91.37%*.
+2. *Multi-Kernel Non-Linear Peak*: `Multi-Kernel Non-Linear DLinear` reaches *0.8156 F1-Score* (+0.0259 gain over Best Normal LSTM baseline) and achieves the lowest daily error of *3.75 hours MAE*.
 
-The Plain Standard LSTM maps a historical $L=14$ day sequence vector into 24 binary hourly stockout predictions:
-
-#figure(
-  image("images/plain_lstm_architecture_diagram.png", width: 95%),
-  caption: [Detailed Plain Standard LSTM Architecture Diagram showing Recurrent Unrolling, Internal Cell Gating Equations, and 24-Hour Linear Projection Head]
-)
-
-=== Mathematical Formulations & Gating Mechanics
-For each daily sequence step $t in {1, 2, dots, L}$:
-1. *Forget Gate*: $f_t = sigma(W_f dot [h_(t-1), x_t] + b_f)$
-2. *Input Gate*: $i_t = sigma(W_i dot [h_(t-1), x_t] + b_i)$
-3. *Candidate Cell State*: $tilde(C)_t = tanh(W_c dot [h_(t-1), x_t] + b_c)$
-4. *Cell State Update*: $C_t = f_t dot C_(t-1) + i_t dot tilde(C)_t$
-5. *Output Gate*: $o_t = sigma(W_o dot [h_(t-1), x_t] + b_o)$
-6. *Hidden State Update*: $h_t = o_t dot tanh(C_t)$
-7. *24-Hour Linear Projection*: $hat(Y) = sigma(W_"out" dot h_L + b_"out") in [0, 1]^(24)$
-
-== Architectural Benchmark: Normal LSTMs vs DLinear Variations
-
-To evaluate linear decomposition against recurrent sequence modeling, we benchmarked standard Normal LSTMs directly against Standard DLinear and Hourly Slot-Specific DLinear:
-
-#figure(
-  image("images/lstm_vs_dlinear_comparison.png", width: 95%),
-  caption: [Empirical F1-Score Comparison: LSTM Variations vs Standard DLinear (F1 = 0.7932) and Hourly Slot-Specific DLinear (F1 = 0.8058)]
-)
-
-== Empirical Validation Benchmark Table Across All Models
+== Master Empirical Validation Benchmark Table Across All Models
 
 All models were evaluated on identical 24-hour stock status validation splits.
 
@@ -96,19 +73,16 @@ All models were evaluated on identical 24-hour stock status validation splits.
   stroke: 0.5pt + luma(150),
   fill: (col, row) => if row == 0 { rgb("#e5e7eb") } else if row == 1 { rgb("#d1fae5") } else if row >= 2 and row <= 3 { rgb("#fef3c7") } else { none },
   [*Architecture Name*], [*Architecture Category*], [*Seq*], [*Feats*], [*Params*], [*F1-Score*], [*Recall*],
-  [*Multi-Kernel DLinear*], [Linear (Multi-Scale)], [14], [10], [*13,539*], [*0.8131*], [*0.8522*],
-  [*Hourly Slot-Specific DLinear*], [Linear (24 Heads)], [14], [10], [*6,744*], [*0.8058*], [*0.8802*],
-  [*Standard DLinear*], [Linear (Decomposition)], [14], [10], [*6,768*], [*0.7932*], [*0.8744*],
-  [*Baseline Standard LSTM*], [Plain Standard LSTM], [14], [13], [44,952], [*0.7852*], [0.8040]
-)
-
-#figure(
-  image("images/hourly_f1_vs_params_by_family.png", width: 95%),
-  caption: [Overall Model Architecture Family Benchmark Scatter Plot]
+  [*Multi-Kernel Non-Linear DLinear*], [Non-Linear DLinear], [14], [10], [*42,339*], [*0.8156*], [87.13%],
+  [*Multi-Kernel Linear DLinear*], [Linear (Multi-Scale)], [14], [10], [*13,539*], [*0.8131*], [85.22%],
+  [*Non-Linear GELU DLinear*], [Non-Linear DLinear], [14], [10], [*21,168*], [*0.8083*], [*91.37%*],
+  [*Hourly Slot-Specific DLinear*], [Linear (24 Heads)], [14], [10], [*6,744*], [*0.8058*], [88.02%],
+  [*Standard Linear DLinear*], [Linear (Decomposition)], [14], [10], [*6,768*], [0.7932], [87.44%],
+  [*Best Normal LSTM Baseline*], [Plain Standard LSTM], [14], [13], [5,912], [0.7897], [81.29%]
 )
 
 == Strategic Recommendations & Conclusion
 
-1. *Baseline Recurrent Model*: Deploy *Baseline Standard LSTM (h=96)* (0.7852 F1-Score, 44.9k params).
-2. *Best Linear Projection*: Deploy *Hourly Slot-Specific DLinear* (0.8058 F1-Score, 88.02% Recall, 6.7k params).
+1. *Highest F1 & Lowest MAE*: Deploy *Multi-Kernel Non-Linear DLinear* (0.8156 F1-Score, 3.75 hrs MAE, 42.3k params).
+2. *Highest Stockout Recall*: Deploy *Non-Linear GELU DLinear* (0.8083 F1-Score, 91.37% Recall, 21.1k params).
 3. *Compiled Report*: Refer to [docs/stockout_architectures_and_results.pdf](stockout_architectures_and_results.pdf) for the updated publication-ready PDF documentation.

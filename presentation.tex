@@ -31,7 +31,7 @@
 
 % Title Information
 \title[Next-Day 24-Hour Stock Status Prediction]{Next-Day 24-Hour Stock Status Prediction in Fresh Retail}
-\subtitle{Architectural Evolution from LSTMs to Hourly Slot-Specific DLinear}
+\subtitle{Architectural Evolution from LSTMs to Non-Linear Multi-Kernel DLinear}
 \author[Anurag, Samyak, Vibhor]{Anurag Thakur \quad Samyak \quad Vibhor Kumar}
 \institute[BTP 2026]{Department of Information Technology\\Bachelor of Technology Project (BTP)}
 \date{August 2026}
@@ -275,25 +275,25 @@
 \end{frame}
 
 % ==========================================
-% SLIDE 10: ARCHITECTURAL INNOVATION 2: HOURLY SLOT DLINEAR
+% SLIDE 10: ARCHITECTURAL INNOVATION 2: NON-LINEAR & MULTI-KERNEL DLINEAR
 % ==========================================
-\begin{frame}{Architectural Innovation 2: Hourly Slot-Specific DLinear}
+\begin{frame}{Architectural Innovation 2: Introducing Non-Linearity into DLinear}
   \begin{columns}[T]
     \begin{column}{0.55\textwidth}
       \centering
-      \includegraphics[width=\textwidth]{images/lstm_vs_dlinear_comparison.png}
+      \includegraphics[width=\textwidth]{images/nonlinear_dlinear_comparison.png}
     \end{column}
     
     \begin{column}{0.42\textwidth}
-      \begin{block}{24 Dedicated Hourly Linear Heads}
-        Replaces flat matrix multiplication with 24 dedicated hourly linear heads ($W_1, W_2, \dots, W_{24}$):
-        $$\hat{y}_h = W_{\text{trend}, h} X_{\text{trend}} + W_{\text{seasonal}, h} X_{\text{seasonal}}$$
+      \begin{block}{Non-Linear Activation Bottleneck}
+        Adds GELU activation bottlenecks between decomposition and output projections:
+        $$\hat{Y} = W_{\text{trend}, 2} \text{GELU}(W_{\text{trend}, 1} X_{\text{trend}}) + \text{Seasonal}$$
       \end{block}
       
-      \begin{block}{Performance Breakthrough}
+      \begin{block}{Breakthrough Results}
         \begin{itemize}
-          \item \textbf{Hourly Slot DLinear}: \textbf{0.8058 F1-Score} \& \textbf{88.02\% Recall} (+0.0161 gain over baseline).
-          \item \textbf{Multi-Kernel DLinear}: \textbf{0.8131 F1-Score} ($k=3, 5, 7$ multi-scale pooling).
+          \item \textbf{Non-Linear GELU DLinear}: Reaches \textbf{91.37\% Stockout Recall} (Highest in Repo!) and \textbf{0.8083 F1}.
+          \item \textbf{Multi-Kernel Non-Linear DLinear}: Reaches \textbf{0.8156 F1-Score} (New Peak F1 \& lowest 3.75h MAE).
         \end{itemize}
       \end{block}
     \end{column}
@@ -332,16 +332,16 @@
     \toprule
     \textbf{Rank} & \textbf{Architecture Name} & \textbf{Category} & \textbf{Params} & \textbf{F1-Score} & \textbf{Recall} & \textbf{MAE (hrs)} \\
     \midrule
-    \rowcolor{green!15} \textbf{1} & \textbf{Multi-Kernel DLinear} & Linear (Multi-Scale) & 13,539 & \textbf{0.8131} & 85.22\% & \textbf{3.86} \\
-    \rowcolor{green!10} \textbf{2} & \textbf{Hourly Slot-Specific DLinear} & Linear (24 Heads) & 6,744 & \textbf{0.8058} & \textbf{88.02\%} & 4.23 \\
-    3 & Standard DLinear & Linear (Decomp) & 6,768 & \textbf{0.7932} & 87.44\% & 4.28 \\
-    4 & Dual-Stream Inventory Shortcut & LSTM Family & 4,600 & \textbf{0.7926} & 80.79\% & 3.96 \\
-    5 & Dual-Stream ResNet Shortcut & LSTM Family & 4,728 & 0.7914 & 80.94\% & 4.11 \\
+    \rowcolor{green!15} \textbf{1} & \textbf{Multi-Kernel Non-Linear DLinear} & Non-Linear DLinear & 42,339 & \textbf{0.8156} & 87.13\% & \textbf{3.75} \\
+    \rowcolor{green!10} \textbf{2} & \textbf{Multi-Kernel Linear DLinear} & Linear (Multi-Scale) & 13,539 & \textbf{0.8131} & 85.22\% & 3.86 \\
+    \rowcolor{green!5} \textbf{3} & \textbf{Non-Linear GELU DLinear} & Non-Linear DLinear & 21,168 & \textbf{0.8083} & \textbf{91.37\%} & 4.20 \\
+    4 & Hourly Slot-Specific DLinear & Linear (24 Heads) & 6,744 & \textbf{0.8058} & 88.02\% & 4.23 \\
+    5 & Standard Linear DLinear & Linear (Decomp) & 6,768 & \textbf{0.7932} & 87.44\% & 4.28 \\
+    6 & Dual-Stream Inventory Shortcut & LSTM Family & 4,600 & \textbf{0.7926} & 80.79\% & 3.96 \\
     \rowcolor{blue!10} \textbf{Base} & \textbf{Best Normal LSTM (h=32)} & Normal LSTM & 5,912 & \textbf{0.7897} & 81.29\% & 4.31 \\
-    6 & Feature-Reduced Standard LSTM & Normal LSTM & 19,992 & 0.7880 & 81.60\% & 4.58 \\
-    7 & Baseline Standard LSTM (h=96) & Normal LSTM & 44,952 & 0.7852 & 80.40\% & 4.67 \\
-    8 & Vanilla Simple RNN (h=64) & RNN Family & 14,744 & 0.7750 & 81.02\% & 4.23 \\
-    9 & Hourly Query Transformer & Transformer & 281,345 & 0.7685 & 82.08\% & 4.25 \\
+    7 & Feature-Reduced Standard LSTM & Normal LSTM & 19,992 & 0.7880 & 81.60\% & 4.58 \\
+    8 & Baseline Standard LSTM (h=96) & Normal LSTM & 44,952 & 0.7852 & 80.40\% & 4.67 \\
+    9 & Vanilla Simple RNN (h=64) & RNN Family & 14,744 & 0.7750 & 81.02\% & 4.23 \\
     10 & PatchTST Patch Linear & Transformer & 285,624 & 0.7540 & 81.90\% & 4.16 \\
     \bottomrule
   \end{tabular}
@@ -355,9 +355,9 @@
     \begin{column}{0.48\textwidth}
       \begin{block}{Key Architectural Takeaways}
         \begin{enumerate}
-          \item \textbf{Parameter Efficiency Wins}: Compact LSTMs and Linear models (4.6k--13.5k params) outperform 280k+ param Transformers.
-          \item \textbf{Feature Decoupling Matters}: Decoupling sales and inventory signals eliminates gradient noise (+0.0029 F1 gain).
-          \item \textbf{Dedicated Hourly Heads}: Resolves inter-hour gradient conflict between morning and evening hours (+0.0161 F1 gain).
+          \item \textbf{Non-Linearity Boosts DLinear}: GELU bottlenecks boost DLinear F1 to \textbf{0.8083} and Recall to a record \textbf{91.37\%}.
+          \item \textbf{New All-Time Peak F1}: Multi-Kernel Non-Linear DLinear sets the highest F1-Score of \textbf{0.8156} and lowest MAE of \textbf{3.75 hours}.
+          \item \textbf{Feature Decoupling \& Slot Heads}: Resolves inter-hour gradient noise and temporal cross-talk.
         \end{enumerate}
       \end{block}
     \end{column}
@@ -365,8 +365,8 @@
     \begin{column}{0.48\textwidth}
       \begin{block}{Deployment Recommendations}
         \begin{itemize}
-          \item \textbf{Primary Production Deployment}: \textbf{Hourly Slot-Specific DLinear} (0.8058 F1, 88.02\% Recall, 6.7k params, 0.50 ms latency).
-          \item \textbf{High-Accuracy Variant}: \textbf{Multi-Kernel DLinear} (0.8131 F1, 3.86 hrs MAE).
+          \item \textbf{Primary Production Deployment}: \textbf{Multi-Kernel Non-Linear DLinear} (0.8156 F1, 3.75h MAE, 42.3k params).
+          \item \textbf{Maximum Risk Mitigation}: \textbf{Non-Linear GELU DLinear} (91.37\% Stockout Recall).
           \item \textbf{Future Scope}: Incorporate real-time intraday point-of-sale stream updates for dynamic threshold adjustment.
         \end{itemize}
       \end{block}
