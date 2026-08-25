@@ -6,6 +6,7 @@ As the project evolved, it became imperative to benchmark our custom recurrent a
 \section{Standardized Evaluation Framework}
 
 To ensure rigorous comparability across all models, we established a definitive and strictly standardized evaluation framework. This framework eliminated metric inflation caused by data leakage or skewed metric selection:
+
 \begin{itemize}
     \item \textbf{Dataset Scope:} Evaluation was constrained to the Top 15 statistically significant store-product series to prevent learning spurious patterns from dead inventory.
     \item \textbf{Holdout Strategy:} We employed a strict chronological split. The final 15 days of the dataset were held out exclusively as a test set. 
@@ -57,6 +58,7 @@ Furthermore, a broader comparison across all tested model families (Figure \ref{
 This thesis addressed the highly demanding operational challenge of forecasting intra-day stockouts in modern, high-frequency fresh retail supply chains. By deliberately abandoning daily aggregate modeling (e.g., traditional C1 supply/backorder research) and embracing store-level, hour-wise granular prediction, we tackled a genuine industry bottleneck where short-term inventory availability directly dictates customer retention.
 
 Our sequential progression through various architectural paradigms yielded several critical insights:
+
 \begin{enumerate}
     \item \textbf{Feature Curation over Capacity:} Systematic ablation proved that aggressive feature reduction is significantly more effective at increasing robustness than arbitrarily increasing recurrent hidden sizes.
     \item \textbf{The Power of Architectural Routing:} By explicitly separating volatile demand features from physical inventory features, and crucially, routing the latest (Day 14) inventory status directly to the final fusion layer, we overcame recurrent signal dilution.
