@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, average_precision_score
 from sklearn.preprocessing import StandardScaler
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
@@ -460,6 +460,58 @@ class Stock24DualStreamInventoryShortcutLSTM(nn.Module):
         return self.head(self.fuse(shortcut_fused))
 
 
+class Stock24DualStreamInventoryEmbeddingLSTM(Stock24DualStreamInventoryShortcutLSTM):
+    """Inventory-shortcut model augmented with static store/product context."""
+
+    def __init__(
+        self,
+        input_size: int,
+        hidden_size: int,
+        demand_indices: list[int],
+        inventory_indices: list[int],
+        store_count: int,
+        product_count: int,
+        embedding_size: int = 4,
+        demand_hidden_size: int | None = None,
+        inventory_hidden_size: int | None = None,
+    ):
+        super().__init__(
+            input_size=input_size,
+            hidden_size=hidden_size,
+            demand_indices=demand_indices,
+            inventory_indices=inventory_indices,
+            demand_hidden_size=demand_hidden_size,
+            inventory_hidden_size=inventory_hidden_size,
+        )
+        self.store_embedding = nn.Embedding(store_count, embedding_size)
+        self.product_embedding = nn.Embedding(product_count, embedding_size)
+        self.static_embedding_size = embedding_size * 2
+        self.fuse = nn.Sequential(
+            nn.Linear(hidden_size + len(inventory_indices) + self.static_embedding_size, hidden_size),
+            nn.Tanh(),
+            nn.Dropout(0.2),
+        )
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        store_indices: torch.Tensor,
+        product_indices: torch.Tensor,
+    ) -> torch.Tensor:
+        demand_x = x[:, :, self.demand_indices]
+        inventory_x = x[:, :, self.inventory_indices]
+        _, (demand_hidden, _) = self.demand_lstm(demand_x)
+        _, (inventory_hidden, _) = self.inventory_lstm(inventory_x)
+        fused = torch.cat([demand_hidden[-1], inventory_hidden[-1]], dim=-1)
+        last_inventory = x[:, -1, self.inventory_indices]
+        static_context = torch.cat(
+            [self.store_embedding(store_indices), self.product_embedding(product_indices)],
+            dim=-1,
+        )
+        shortcut_fused = torch.cat([fused, last_inventory, static_context], dim=-1)
+        return self.head(self.fuse(shortcut_fused))
+
+
 class Stock24DualStreamGatedShortcutLSTM(nn.Module):
     def __init__(
         self,
@@ -524,11 +576,20 @@ def train_epoch(
 ) -> float:
     model.train()
     losses = []
-    for features, labels in loader:
-        features = features.to(device)
+    for batch in loader:
+        if len(batch) == 2:
+            features, labels = batch
+            model_inputs = (features.to(device),)
+        else:
+            features, store_indices, product_indices, labels = batch
+            model_inputs = (
+                features.to(device),
+                store_indices.to(device),
+                product_indices.to(device),
+            )
         labels = labels.to(device)
         optimizer.zero_grad()
-        logits = model(features)
+        logits = model(*model_inputs)
         loss = criterion(logits, labels)
         loss.backward()
         optimizer.step()
@@ -541,8 +602,18 @@ def predict(model: nn.Module, loader: DataLoader, device: torch.device) -> tuple
     model.eval()
     labels = []
     probabilities = []
-    for features, target in loader:
-        logits = model(features.to(device))
+    for batch in loader:
+        if len(batch) == 2:
+            features, target = batch
+            model_inputs = (features.to(device),)
+        else:
+            features, store_indices, product_indices, target = batch
+            model_inputs = (
+                features.to(device),
+                store_indices.to(device),
+                product_indices.to(device),
+            )
+        logits = model(*model_inputs)
         probabilities.append(torch.sigmoid(logits).cpu().numpy())
         labels.append(target.numpy())
     return np.vstack(labels), np.vstack(probabilities)
@@ -557,6 +628,7 @@ def compute_metrics(labels: np.ndarray, probabilities: np.ndarray) -> dict[str, 
         "hour_level_precision": float(precision_score(flat_labels, flat_predictions, zero_division=0)),
         "hour_level_recall": float(recall_score(flat_labels, flat_predictions, zero_division=0)),
         "hour_level_f1": float(f1_score(flat_labels, flat_predictions, zero_division=0)),
+        "pr_auc": float(average_precision_score(flat_labels, probabilities.ravel())),
         "exact_24h_match_rate": float((predictions == labels).all(axis=1).mean()),
         "mean_absolute_hour_count_error": float(
             np.abs(predictions.sum(axis=1) - labels.sum(axis=1)).mean()

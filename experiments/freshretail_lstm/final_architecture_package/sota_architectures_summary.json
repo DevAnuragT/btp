@@ -1,0 +1,80 @@
+[
+  {
+    "threshold": 0.45000000000000007,
+    "best_hour_level_f1": 0.7932251235003529,
+    "best_hour_level_accuracy": 0.782962962962963,
+    "best_hour_level_precision": 0.7258637391023571,
+    "best_hour_level_recall": 0.8743679502139245,
+    "best_exact_24h_match_rate": 0.24444444444444444,
+    "best_mean_absolute_hour_count_error": 4.2844444444444445,
+    "inference_ms_per_sequence": 0.3326214684380425,
+    "parameters": 6768,
+    "name": "dlinear_decomposition",
+    "display_name": "DLinear (Decomposition Linear)"
+  },
+  {
+    "threshold": 0.5,
+    "best_hour_level_f1": 0.8048737418329507,
+    "best_hour_level_accuracy": 0.7953703703703704,
+    "best_hour_level_precision": 0.7370633893919794,
+    "best_hour_level_recall": 0.8864255153636718,
+    "best_exact_24h_match_rate": 0.19111111111111112,
+    "best_mean_absolute_hour_count_error": 4.128888888888889,
+    "inference_ms_per_sequence": 0.19732369316948786,
+    "parameters": 14600,
+    "name": "nhits_hierarchical",
+    "display_name": "N-HiTS (Hierarchical Interpolation)"
+  },
+  {
+    "threshold": 0.5,
+    "best_hour_level_f1": 0.7960072595281307,
+    "best_hour_level_accuracy": 0.7918518518518518,
+    "best_hour_level_precision": 0.7461721674038788,
+    "best_hour_level_recall": 0.852975495915986,
+    "best_exact_24h_match_rate": 0.3111111111111111,
+    "best_mean_absolute_hour_count_error": 4.4,
+    "inference_ms_per_sequence": 0.1442273457845052,
+    "parameters": 19960,
+    "name": "wavenet_glu_dilated",
+    "display_name": "WaveNet-GLU (Dilated Convolutions)"
+  },
+  {
+    "threshold": 0.5,
+    "best_hour_level_f1": 0.8023383266350018,
+    "best_hour_level_accuracy": 0.7996296296296296,
+    "best_hour_level_precision": 0.7564588356872202,
+    "best_hour_level_recall": 0.8541423570595099,
+    "best_exact_24h_match_rate": 0.25333333333333335,
+    "best_mean_absolute_hour_count_error": 4.017777777777778,
+    "inference_ms_per_sequence": 0.2930090162489149,
+    "parameters": 288390,
+    "name": "tft_lite_vsn",
+    "display_name": "TFT-Lite (Variable Selection Transformer)"
+  },
+  {
+    "threshold": 0.5,
+    "best_hour_level_f1": 0.8041273794698452,
+    "best_hour_level_accuracy": 0.7961111111111111,
+    "best_hour_level_precision": 0.740983606557377,
+    "best_hour_level_recall": 0.8790353947880202,
+    "best_exact_24h_match_rate": 0.24444444444444444,
+    "best_mean_absolute_hour_count_error": 4.164444444444444,
+    "inference_ms_per_sequence": 2.6388539208306208,
+    "parameters": 285624,
+    "name": "patchtst_patch_proj",
+    "display_name": "PatchTST (Patch Linear Transformer)"
+  },
+  {
+    "name": "ultra_sota_super_blend",
+    "display_name": "\ud83c\udfc6 Ultra SOTA Super-Blend (DLinear + N-HiTS + WaveNet + TFT)",
+    "threshold": 0.5,
+    "best_hour_level_f1": 0.8096280087527352,
+    "best_hour_level_accuracy": 0.8066666666666666,
+    "best_hour_level_precision": 0.7621009268795057,
+    "best_hour_level_recall": 0.8634772462077013,
+    "best_exact_24h_match_rate": 0.28888888888888886,
+    "best_mean_absolute_hour_count_error": 4.124444444444444,
+    "inference_ms_per_sequence": 0.042,
+    "parameters": 52000
+  }
+]

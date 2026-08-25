@@ -1,0 +1,17 @@
+graph TD
+    subgraph "Model Predictions"
+        M["Trained Seq2Seq / RNN Model"] --> P["Stockout Probabilities P(Y)"]
+    end
+
+    subgraph "Temporal Attention Track"
+        M --> Attn["Attention Matrix A[t_hist, t_fut]"]
+        Attn --> AttnHeat["Temporal Attention Heatmap (Identifies WHEN model looks)"]
+    end
+
+    subgraph "Feature Attribution Track (Captum)"
+        M --> IG["Integrated Gradients Engine"]
+        IG --> Base["Baseline X_0 (Zero Vector)"]
+        IG --> Grad["Riemann Sum Gradient Integration"]
+        Grad --> IGHeat["Feature Importance Heatmap (Identifies WHICH features drive prediction)"]
+        Grad --> IGBar["Aggregated Feature Importance Barplot"]
+    end

@@ -19,6 +19,7 @@ from train_top_sku_24h_lstm import (
     TARGET_COLUMNS,
     Stock24CIFGLSTM,
     Stock24DualStreamGatedShortcutLSTM,
+    Stock24DualStreamInventoryEmbeddingLSTM,
     Stock24DualStreamInventoryShortcutLSTM,
     Stock24DualStreamLSTM,
     Stock24DualStreamCIFGLSTM,
@@ -74,6 +75,7 @@ class ExperimentConfig:
     model_type: str = "baseline"
     demand_hidden_size: int | None = None
     inventory_hidden_size: int | None = None
+    embedding_size: int = 4
     epochs: int = 10
     batch_size: int = 64
     learning_rate: float = 1e-3
@@ -155,6 +157,16 @@ CONFIGS = [
         demand_hidden_size=16,
         inventory_hidden_size=16,
     ),
+    ExperimentConfig(
+        "dual_stream_inventory_embedding_h16x16_e4_seq14_f6",
+        32,
+        14,
+        "reduced",
+        model_type="dual_stream_inventory_embedding",
+        demand_hidden_size=16,
+        inventory_hidden_size=16,
+        embedding_size=4,
+    ),
 ]
 
 
@@ -198,11 +210,66 @@ class FeatureSubsetSequenceDataset(Stock24SequenceDataset):
                 self.meta.append({"series_id": series_id, "target_date": str(target_date.date())})
 
 
+class StaticEmbeddingSequenceDataset(FeatureSubsetSequenceDataset):
+    """Return categorical store and product indices with each sequence."""
+
+    def __init__(
+        self,
+        frame: pd.DataFrame,
+        feature_columns: list[str],
+        sequence_length: int,
+        cutoff_date: pd.Timestamp,
+        mode: str,
+    ):
+        store_values = sorted(frame["store_id"].astype(str).unique())
+        product_values = sorted(frame["product_id"].astype(str).unique())
+        self.store_to_index = {value: index for index, value in enumerate(store_values)}
+        self.product_to_index = {value: index for index, value in enumerate(product_values)}
+        self.x: list[np.ndarray] = []
+        self.y: list[np.ndarray] = []
+        self.store_indices: list[int] = []
+        self.product_indices: list[int] = []
+        self.meta: list[dict[str, object]] = []
+        for series_id, group in frame.groupby("series_id", sort=False):
+            group = group.sort_values("dt").reset_index(drop=True)
+            features = group[feature_columns].to_numpy(dtype=np.float32)
+            targets = group[TARGET_COLUMNS].to_numpy(dtype=np.float32)
+            dates = group["dt"].to_numpy()
+            if len(group) <= sequence_length:
+                continue
+            store_index = self.store_to_index[str(group["store_id"].iloc[0])]
+            product_index = self.product_to_index[str(group["product_id"].iloc[0])]
+            for end in range(sequence_length, len(group)):
+                target_date = pd.Timestamp(dates[end])
+                if mode == "train" and target_date > cutoff_date:
+                    continue
+                if mode == "validation" and target_date <= cutoff_date:
+                    continue
+                self.x.append(features[end - sequence_length : end])
+                self.y.append(targets[end - 1])
+                self.store_indices.append(store_index)
+                self.product_indices.append(product_index)
+                self.meta.append({"series_id": series_id, "target_date": str(target_date.date())})
+
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, ...]:
+        return (
+            torch.tensor(self.x[index], dtype=torch.float32),
+            torch.tensor(self.store_indices[index], dtype=torch.long),
+            torch.tensor(self.product_indices[index], dtype=torch.long),
+            torch.tensor(self.y[index], dtype=torch.float32),
+        )
+
+
 def count_parameters(model: nn.Module) -> int:
     return sum(parameter.numel() for parameter in model.parameters() if parameter.requires_grad)
 
 
-def build_model(config: ExperimentConfig, features: list[str]) -> nn.Module:
+def build_model(
+    config: ExperimentConfig,
+    features: list[str],
+    store_count: int,
+    product_count: int,
+) -> nn.Module:
     if config.model_type == "baseline":
         return Stock24LSTM(len(features), config.hidden_size)
     if config.model_type == "cifg":
@@ -213,6 +280,7 @@ def build_model(config: ExperimentConfig, features: list[str]) -> nn.Module:
         "dual_stream_shortcut",
         "dual_stream_inventory_shortcut",
         "dual_stream_gated_shortcut",
+        "dual_stream_inventory_embedding",
     }:
         missing = [
             feature
@@ -262,6 +330,18 @@ def build_model(config: ExperimentConfig, features: list[str]) -> nn.Module:
             demand_hidden_size=config.demand_hidden_size,
             inventory_hidden_size=config.inventory_hidden_size,
         )
+    if config.model_type == "dual_stream_inventory_embedding":
+        return Stock24DualStreamInventoryEmbeddingLSTM(
+            input_size=len(features),
+            hidden_size=config.hidden_size,
+            demand_indices=demand_indices,
+            inventory_indices=inventory_indices,
+            store_count=store_count,
+            product_count=product_count,
+            embedding_size=config.embedding_size,
+            demand_hidden_size=config.demand_hidden_size,
+            inventory_hidden_size=config.inventory_hidden_size,
+        )
     if config.model_type == "dual_stream_gated_shortcut":
         return Stock24DualStreamGatedShortcutLSTM(
             input_size=len(features),
@@ -297,12 +377,13 @@ def run_config(
     scaler.fit(frame.loc[frame["dt"] <= cutoff_date, features])
     frame[features] = scaler.transform(frame[features])
 
-    train_dataset = FeatureSubsetSequenceDataset(
-        frame, features, config.sequence_length, cutoff_date, "train"
+    dataset_class = (
+        StaticEmbeddingSequenceDataset
+        if config.model_type == "dual_stream_inventory_embedding"
+        else FeatureSubsetSequenceDataset
     )
-    validation_dataset = FeatureSubsetSequenceDataset(
-        frame, features, config.sequence_length, cutoff_date, "validation"
-    )
+    train_dataset = dataset_class(frame, features, config.sequence_length, cutoff_date, "train")
+    validation_dataset = dataset_class(frame, features, config.sequence_length, cutoff_date, "validation")
     train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
     validation_loader = DataLoader(validation_dataset, batch_size=config.batch_size, shuffle=False)
 
@@ -312,7 +393,12 @@ def run_config(
     negative_hours = total_hours - positive_hours
     pos_weight = torch.tensor([negative_hours / max(positive_hours, 1.0)] * 24, device=device)
 
-    model = build_model(config, features).to(device)
+    model = build_model(
+        config,
+        features,
+        store_count=frame["store_id"].astype(str).nunique(),
+        product_count=frame["product_id"].astype(str).nunique(),
+    ).to(device)
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
     parameter_count = count_parameters(model)
@@ -350,14 +436,17 @@ def run_config(
         "best_hour_level_precision": best_metrics["hour_level_precision"],
         "best_hour_level_recall": best_metrics["hour_level_recall"],
         "best_hour_level_f1": best_metrics["hour_level_f1"],
+        "best_pr_auc": best_metrics["pr_auc"],
         "best_exact_24h_match_rate": best_metrics["exact_24h_match_rate"],
         "best_mean_absolute_hour_count_error": best_metrics[
             "mean_absolute_hour_count_error"
         ],
+        "final_epoch": len(history),
         "final_hour_level_accuracy": final_metrics["hour_level_accuracy"],
         "final_hour_level_precision": final_metrics["hour_level_precision"],
         "final_hour_level_recall": final_metrics["hour_level_recall"],
         "final_hour_level_f1": final_metrics["hour_level_f1"],
+        "final_pr_auc": final_metrics["pr_auc"],
         "final_exact_24h_match_rate": final_metrics["exact_24h_match_rate"],
         "final_mean_absolute_hour_count_error": final_metrics[
             "mean_absolute_hour_count_error"

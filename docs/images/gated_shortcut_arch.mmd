@@ -1,0 +1,34 @@
+graph TD
+    subgraph "Stream Inputs"
+        D_in["Demand Sequence Input"]
+        I_in["Inventory Sequence Input"]
+    end
+
+    subgraph "Processing Branches"
+        D_in --> L_Demand["Demand Stream LSTM"]
+        I_in --> L_Inven["Inventory Stream LSTM"]
+        I_in --> DirectCut["Direct Inventory Residual Shortcut"]
+    end
+
+    subgraph "Dynamic Gating Mechanism"
+        L_Demand --> Concat["Concatenate [h_demand, h_inven]"]
+        L_Inven --> Concat
+        Concat --> GateLinear["Gating Linear Layer W_g"]
+        GateLinear --> GateSig["Sigmoid Gate α = σ(W_g x + b_g)"]
+        
+        Concat --> MainFeat["Main Feature Transformation"]
+    end
+
+    subgraph "Residual Gated Fusion"
+        MainFeat --> Mult1["α * Main Features"]
+        GateSig --> Mult1
+        DirectCut --> Add1["(1 - α) * Direct Shortcut"]
+        GateSig --> Add1
+        Mult1 --> Combine["Gated Residual Addition"]
+        Add1 --> Combine
+    end
+
+    subgraph "Output Projection"
+        Combine --> Head["24-Hour Output Projection Head"]
+        Head --> Y["24-Hour Stock Status Output"]
+    end

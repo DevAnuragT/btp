@@ -1,0 +1,67 @@
+[
+  {
+    "threshold": 0.45000000000000007,
+    "best_hour_level_f1": 0.8054016620498615,
+    "best_hour_level_accuracy": 0.7918518518518518,
+    "best_hour_level_precision": 0.7257410296411857,
+    "best_hour_level_recall": 0.9047063399455465,
+    "best_exact_24h_match_rate": 0.24888888888888888,
+    "best_mean_absolute_hour_count_error": 4.275555555555556,
+    "inference_ms_per_sequence": 0.14133241441514757,
+    "parameters": 6768,
+    "name": "dlinear_baseline",
+    "display_name": "Baseline DLinear (Standard k=5)"
+  },
+  {
+    "threshold": 0.5,
+    "best_hour_level_f1": 0.8131378734459084,
+    "best_hour_level_accuracy": 0.8135185185185185,
+    "best_hour_level_precision": 0.7775017743080199,
+    "best_hour_level_recall": 0.85219758848697,
+    "best_exact_24h_match_rate": 0.27111111111111114,
+    "best_mean_absolute_hour_count_error": 3.862222222222222,
+    "inference_ms_per_sequence": 0.17636934916178384,
+    "parameters": 13539,
+    "name": "dlinear_multikernel",
+    "display_name": "Multi-Kernel DLinear (k=3,5,7 Multi-Scale)"
+  },
+  {
+    "threshold": 0.5,
+    "best_hour_level_f1": 0.7991975196060551,
+    "best_hour_level_accuracy": 0.7961111111111111,
+    "best_hour_level_precision": 0.7524038461538461,
+    "best_hour_level_recall": 0.85219758848697,
+    "best_exact_24h_match_rate": 0.26666666666666666,
+    "best_mean_absolute_hour_count_error": 4.164444444444444,
+    "inference_ms_per_sequence": 0.2930704752604167,
+    "parameters": 7210,
+    "name": "dlinear_channel_gated",
+    "display_name": "Channel-Gated DLinear (Feature Gating)"
+  },
+  {
+    "threshold": 0.45000000000000007,
+    "best_hour_level_f1": 0.8057682036674382,
+    "best_hour_level_accuracy": 0.797962962962963,
+    "best_hour_level_precision": 0.7429415627051871,
+    "best_hour_level_recall": 0.8802022559315441,
+    "best_exact_24h_match_rate": 0.26666666666666666,
+    "best_mean_absolute_hour_count_error": 4.235555555555556,
+    "inference_ms_per_sequence": 0.502879884507921,
+    "parameters": 6744,
+    "name": "dlinear_hourly_slot",
+    "display_name": "Hourly Slot-Specific DLinear (24 Heads)"
+  },
+  {
+    "threshold": 0.5,
+    "best_hour_level_f1": 0.8124205556564372,
+    "best_hour_level_accuracy": 0.8087037037037037,
+    "best_hour_level_precision": 0.7619209809264306,
+    "best_hour_level_recall": 0.8700894593543368,
+    "best_exact_24h_match_rate": 0.26666666666666666,
+    "best_mean_absolute_hour_count_error": 3.897777777777778,
+    "inference_ms_per_sequence": 0.0805558098687066,
+    "parameters": 18096,
+    "name": "dlinear_gated_residual",
+    "display_name": "Gated Residual DLinear (GLU Non-Linear Shortcut)"
+  }
+]

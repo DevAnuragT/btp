@@ -1,0 +1,22 @@
+graph TD
+    subgraph "Multi-Modal Inputs (14 Days)"
+        InD["Demand Features (sale_amount, hours_sale_sum, discount, holiday_flag)"]
+        InI["Inventory Features (stock_hour6_22_cnt, hours_stock_status_sum)"]
+    end
+
+    subgraph "Decoupled Recurrent Streams"
+        InD --> L_Demand["Demand LSTM Subnetwork (h_d = 16 units)"]
+        InI --> L_Inven["Inventory LSTM Subnetwork (h_i = 16 units)"]
+    end
+
+    subgraph "Fusion & Gating Layer"
+        L_Demand --> Conc["Feature Concatenation [h_d || h_i] (32 dim)"]
+        L_Inven --> Conc
+        Conc --> Dense["Fusion FC + BatchNorm + ReLU"]
+    end
+
+    subgraph "Hourly Output Head"
+        Dense --> OutHead["Linear Projection Layer (32 -> 24 units)"]
+        OutHead --> Sigm["Sigmoid Activation"]
+        Sigm --> Y24["24-Hour Stock Status Predictions [H1, H2, ..., H24]"]
+    end

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Model Architecture Flowchart</title>
+    <!-- Load Mermaid -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true, 
+            theme: 'default',
+            flowchart: { curve: 'basis' },
+            securityLevel: 'loose'
+        });
+    </script>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #fafafa;
+            font-family: sans-serif;
+        }
+        .mermaid {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="mermaid">
+    graph LR
+        %% Styling classes
+        classDef stream fill:#f0f8ff,stroke:#005c99,stroke-width:2px,rx:5px,ry:5px
+        classDef process fill:#ffffff,stroke:#333333,stroke-width:2px,rx:5px,ry:5px
+        classDef output fill:#e6ffe6,stroke:#006600,stroke-width:2px,rx:5px,ry:5px
+        
+        subgraph Demand ["Demand Stream"]
+            D_IN["<div style='text-align:left'><b>X_demand</b><br/>• sale_amount<br/>• discount<br/>• holiday_flag<br/>• hours_sale_sum</div>"]:::process
+            D_LSTM["<b>LSTM_demand</b><br/>h=16"]:::stream
+            D_IN --> D_LSTM
+        end
+
+        subgraph Inventory ["Inventory Stream"]
+            I_IN["<div style='text-align:left'><b>X_inventory</b><br/>• stock_hour6_22_cnt<br/>• hours_stock_status_sum</div>"]:::process
+            I_LSTM["<b>LSTM_inventory</b><br/>h=16"]:::stream
+            I_IN --> I_LSTM
+        end
+
+        CONCAT["<b>Concatenation Layer</b><br/>h_demand ∪ h_inv ∪ x_inv(t=14)"]:::process
+        DENSE["<b>Fully Connected Classifier</b><br/>Outputs 24-hr probability vector"]:::output
+
+        D_LSTM --> CONCAT
+        I_LSTM --> CONCAT
+        
+        %% Shortcut Edge
+        I_IN -- "<b style='color:#cc0000'>Shortcut (t=14)</b>" --> CONCAT
+
+        CONCAT --> DENSE
+    </div>
+</body>
+</html>
