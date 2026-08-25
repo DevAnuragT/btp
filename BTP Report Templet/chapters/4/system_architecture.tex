@@ -1,17 +1,17 @@
 \chapter{System Architecture and Methodology}
 \label{chap:methodology}
 
-This chapter details the architectural engineering undertaken to adapt sequence models specifically for the FreshRetailNet-50K high-frequency stockout task. We strictly follow a logical, story-like progression: beginning with baseline evaluations across major model families, utilizing machine learning explainability to guide our feature curation, engineering custom recurrent networks block-by-block, and ultimately exploring state-of-the-art linear architectures.
+This chapter breaks down the different models our team built to tackle the FreshRetailNet-50K hourly stockout problem. We followed a step-by-step process: we started by testing basic models to see how they behave, then we used machine learning explainability to figure out which features actually mattered, built our own custom LSTM model, and finally tested out some of the newest linear models.
 
 \section{Baseline Analysis}
 
-To establish a firm foundation, we formulated a standard 24-hour prediction task utilizing 14 days of historical data. We evaluated foundational architectures across different deep learning families to understand their baseline behaviors on noisy retail data before designing custom solutions.
+To get a solid starting point, we set up a standard test where the models looked at 14 days of history to predict the next 24 hours. We wanted to see how well these basic models could handle messy retail data before we tried to invent our own solution.
 
 \subsection{Baseline SimpleRNN}
-We began with the most fundamental sequential model: the Simple Recurrent Neural Network (RNN). Configured with a hidden size of 64, this baseline contained 14,744 parameters. While computationally lightweight, it struggled with the vanishing gradient problem over the 14-day sequence, achieving an Hour-Level F1-Score of 0.7750. This indicated that simple temporal routing was insufficient for capturing the complex dynamics of retail supply and demand.
+We started with the most basic model for time-series data: a Simple Recurrent Neural Network (RNN). We set it up with a hidden size of 64, giving it about 14,744 parameters to learn. While it was fast to run, it had a lot of trouble remembering things over the full 14 days (a common issue called the vanishing gradient problem). It only achieved an Hour-Level F1-Score of 0.7750, which told our team that simple RNNs are not powerful enough to understand complex shopping habits.
 
 \subsection{Baseline Vanilla and Canonical LSTM}
-To address the shortcomings of the SimpleRNN, we implemented a Baseline LSTM. The gating mechanisms (Forget, Input, Output) allowed the LSTM to better retain crucial information from earlier in the 14-day window. Mathematically, the LSTM cell updates its hidden state $h_t$ and cell state $c_t$ at each timestep $t$ as follows:
+To fix the problems we saw with the SimpleRNN, we built a Baseline LSTM. LSTMs use special "gates" (Forget, Input, and Output) that help the model hold onto important information from earlier in the 14-day window. Mathematically, the LSTM updates its hidden state $h_t$ and cell state $c_t$ at each step $t$ like this:
 
 \begin{align}
     f_t &= \sigma(W_f \cdot [h_{t-1}, x_t] + b_f) \quad &\text{(Forget Gate)} \\
@@ -22,9 +22,9 @@ To address the shortcomings of the SimpleRNN, we implemented a Baseline LSTM. Th
     h_t &= o_t \odot \tanh(c_t) \quad &\text{(Hidden State)}
 \end{align}
 
-Initially, processing all 13 input features with a hidden dimension of 96, the Vanilla LSTM contained approximately 44,952 parameters, achieving an F1-Score of 0.7852. 
+At first, we fed all 13 original features into it and set a hidden size of 96. This Vanilla LSTM was pretty heavy, with about 44,952 parameters, but it performed better with an F1-Score of 0.7852.
 
-Following our feature reduction phase (detailed in Section 4.2), we refined this into the \textbf{Canonical LSTM}. Standardized on just 6 essential features with a hidden size of 32, this architecture unrolls over the 14-day historical window.
+After figuring out that we did not need all 13 features (which we explain in Section 4.2), we shrank this down into what we call the \textbf{Canonical LSTM}. We fed it just the 6 most important features and lowered the hidden size to 32. 
 
 \begin{figure}[!htbp]
     \centering
@@ -54,14 +54,14 @@ Following our feature reduction phase (detailed in Section 4.2), we refined this
     \label{fig:canonical_lstm}
 \end{figure}
 
-While highly efficient (19,992 parameters, 0.7880 F1-Score), this canonical architecture forces the LSTM gates to simultaneously track both highly erratic demand spikes and strict physical inventory constraints within the same hidden state $h_t$, leading to signal interference.
+This Canonical LSTM was much faster (only 19,992 parameters) and slightly more accurate (0.7880 F1-Score). However, it still had a flaw: it forced the LSTM gates to track crazy demand spikes and actual physical inventory limits inside the exact same hidden state $h_t$, which confused the model.
 
 \subsection{Baseline Transformers}
-Given the recent dominance of self-attention mechanisms, we also evaluated heavy Transformer architectures, specifically PatchTST \cite{nie2023patchtst} and Temporal Fusion Transformers (TFT) \cite{lim2021tft}. Despite their massive capacity (over 280,000 parameters), these models underperformed the baseline LSTM, achieving F1-Scores between 0.7540 and 0.7685. The permutation-invariant nature of self-attention proved to be misaligned with the strictly continuous, short-sequence (14-day) physical depletion of retail inventory, suffering from severe over-parameterization.
+Because everyone uses Transformers nowadays, our team also tested some heavy Transformer models, specifically PatchTST \cite{nie2023patchtst} and Temporal Fusion Transformers (TFT) \cite{lim2021tft}. Even though they were massive (over 280,000 parameters), they actually did worse than our basic LSTM, getting F1-Scores around 0.7540 to 0.7685. Transformers are built to look at everything at once, which didn't fit well with our short 14-day history where physical stock goes down step-by-step. They were just too big for the job.
 
-\section{ML Explainability and Feature Importance}
+\section{Figuring Out Feature Importance}
 
-A fundamental question early in our methodology was whether processing all 13 original features was strictly necessary. Over-parameterization in retail datasets often leads to noise memorization, which explained the poor performance of the Transformers. To investigate this and enhance our recurrent architectures scientifically, we employed ML Explainability techniques—specifically Integrated Gradients (IG) \cite{sundararajan2017ig}—to visualize feature importance over the 14-day sequence.
+Early on, our team wondered if we really needed all 13 features the dataset provided. Sometimes giving a model too much messy data just confuses it (which is probably why the Transformers failed). To fix this scientifically, we used a technique called Integrated Gradients (IG) \cite{sundararajan2017ig} to show us exactly what the model was paying attention to over the 14 days.
 
 \begin{figure}[!htbp]
     \centering
@@ -70,17 +70,17 @@ A fundamental question early in our methodology was whether processing all 13 or
     \label{fig:ig_heatmap}
 \end{figure}
 
-As shown in Figure \ref{fig:ig_heatmap}, the explainability heatmap revealed two critical insights that directly shaped our final models:
+As shown in Figure \ref{fig:ig_heatmap}, this test showed us two really important things that changed how we built the rest of our models:
 \begin{enumerate}
-    \item \textbf{Recent Dominance:} Features from $t=13$ and $t=14$ (the most recent days) carried exponentially more attribution weight than historical days.
-    \item \textbf{Inventory Supremacy:} Raw inventory features (like \texttt{stock\_hour6\_22\_cnt}) completely overpowered noisy demand variables (like historical sales and discounts).
+    \item \textbf{Recent Data is King:} The data from the last two days ($t=13$ and $t=14$) was way more important than what happened two weeks ago.
+    \item \textbf{Inventory Beats Demand:} Hard numbers about how much stock is left (like \texttt{stock\_hour6\_22\_cnt}) were far more useful than messy data about past sales or discounts.
 \end{enumerate}
 
-Driven by these explainability results, we aggressively pruned the input space from 13 down to just 6 essential features, providing a much cleaner signal for our subsequent recurrent variations.
+Based on this, our team threw out the bad data and kept only 6 essential features, giving our models a much cleaner signal to learn from.
 
-\section{Variations in Recurrent Architectures}
+\section{Building Our Custom LSTMs}
 
-Armed with a refined feature set, we began building our custom architecture block-by-block. We systematically evaluated variations of RNNs and LSTMs, testing structural modifications to see what specifically improved the forecasting accuracy. Table \ref{tab:rnn_variations} chronicles this evolutionary progression.
+Armed with just the best features, our team started building a custom model piece-by-piece. We tested different structural setups to see what actually improved predictions. Table \ref{tab:rnn_variations} shows the steps we took.
 
 \begin{table}[!htbp]
 \centering
@@ -99,11 +99,11 @@ Armed with a refined feature set, we began building our custom architecture bloc
 \end{tabular}
 \end{table}
 
-\subsection{The Final Custom LSTM: Dual-Stream Inventory Shortcut}
+\subsection{Our Final Custom LSTM: Dual-Stream Inventory Shortcut}
 
-To alleviate the conflicting pressures of the Canonical LSTM and honor the findings from the ML Explainability phase, we engineered our final recurrent variation: the \textbf{Dual-Stream Inventory Shortcut LSTM}. 
+To fix the confusion happening inside the Canonical LSTM, we built our final custom model: the \textbf{Dual-Stream Inventory Shortcut LSTM}. 
 
-We physically separated the 6 optimized features into a Demand Stream (4 features) and an Inventory Stream (2 features), each processed by independent LSTMs. Furthermore, because the IG heatmap proved that the final day's inventory is paramount, we engineered the \textbf{Inventory Shortcut} to route the $t=14$ inventory features entirely around the recurrent layers, directly to the final fusion layer. This prevents the LSTM's forget gates from accidentally diluting the most critical piece of data.
+We split the 6 good features into two groups: 4 features for Demand, and 2 features for Inventory. We gave each group its own separate LSTM to process. On top of that, because our heatmap showed that the very last day's inventory is the most important thing, we added a special "Shortcut." This shortcut takes the inventory numbers from Day 14 and sends them straight to the final output, completely bypassing the LSTMs. This guarantees that the LSTM never accidentally "forgets" the most important data.
 
 \begin{figure}[!htbp]
     \centering
@@ -144,22 +144,22 @@ We physically separated the 6 optimized features into a Demand Stream (4 feature
     \label{fig:dual_stream_lstm}
 \end{figure}
 
-This architecture successfully reduced parameters to just 4,600 while boosting the F1-Score to 0.7941, definitively outperforming all prior recurrent approaches and finalizing our recurrent methodology.
+This new design dropped the parameter count all the way down to just 4,600, but pushed our F1-Score up to 0.7941, making it our best recurrent model by far.
 
 \section{DLinear (Decomposition Linear) Architectures}
 
-Having maximized the potential of recurrent networks, we shifted our methodology to explore modern Decomposition Linear (DLinear) variants. As posited by Zeng et al. (2023) \cite{zeng2023dlinear}, single-layer linear models that decompose time series into Trend and Seasonal components can often outperform complex deep networks on short sequences by entirely avoiding recurrent bottlenecks.
+After doing everything we could with LSTMs, our team wanted to see if newer Decomposition Linear (DLinear) models could do better. According to Zeng et al. (2023) \cite{zeng2023dlinear}, these simple, single-layer models that split time-series data into Trends and Seasons can sometimes beat complex deep learning models because they are simpler and don't get stuck trying to remember long sequences.
 
 \subsection{Standard DLinear}
 
-Standard DLinear separates the input sequence $X$ into a Trend component $X_{trend}$ (extracted via a moving average kernel) and a Residual (Seasonal) component $X_{seasonal}$. Mathematically, this is expressed as:
+Standard DLinear takes the input data $X$ and splits it into a Trend piece ($X_{trend}$, found by averaging recent data) and a Seasonal piece ($X_{seasonal}$, found by subtracting the Trend from the original). The math looks like this:
 
 \begin{align}
     X_{trend} &= \text{AvgPool1D}(X) \\
     X_{seasonal} &= X - X_{trend}
 \end{align}
 
-It then maps these components directly to the 24-hour prediction horizon via independent linear layers ($W_{trend}, W_{seasonal}$), making it fast and interpretably transparent:
+Then, it just uses standard linear layers ($W_{trend}, W_{seasonal}$) to map these pieces directly to the 24-hour prediction. It is very fast and easy to understand:
 
 \begin{equation}
     Y_{pred} = (W_{trend} \cdot X_{trend}) + (W_{seasonal} \cdot X_{seasonal})
@@ -205,7 +205,7 @@ It then maps these components directly to the 24-hour prediction horizon via ind
 
 \subsection{Multi-Kernel DLinear}
 
-To further optimize DLinear for the high volatility of retail stockouts, we engineered the \textbf{Multi-Kernel DLinear}. This architecture utilizes multiple, parallel moving average kernels (e.g., $k=3, 5, 7$) to simultaneously capture short-term panic buying and smoother weekly trends. The trend component becomes a concatenated representation of these multiple resolutions:
+To make DLinear work even better for the crazy ups and downs of grocery shopping, our team built the \textbf{Multi-Kernel DLinear}. Instead of just doing one average to find the trend, this model runs multiple averages at the same time (like $k=3, 5, 7$) to catch both sudden panic-buying and smooth weekly habits. It groups all these trends together like this:
 
 \begin{equation}
     X_{trend} = \text{Concat}(\text{AvgPool1D}_{k=3}(X), \text{AvgPool1D}_{k=5}(X), \text{AvgPool1D}_{k=7}(X))

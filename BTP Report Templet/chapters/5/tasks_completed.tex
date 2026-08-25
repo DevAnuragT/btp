@@ -1,30 +1,30 @@
 \chapter{Tasks Completed}
 \label{chap:tasks}
 
-To achieve the final deployed model and comprehensively explore the structural challenges of high-frequency retail forecasting, the following tasks were systematically completed over a strict three-month timeline:
+To find the best model for this project, our team followed a strict three-month plan. Here is a breakdown of what we accomplished each month:
 
 \begin{enumerate}
-    \item \textbf{Month 1: Initial Research and Baseline Implementation} 
+    \item \textbf{Month 1: Research and Setting Up the Basics} 
     
     \begin{itemize}
-        \item Researched classical C1 supply and backorder forecasting methodologies.
-        \item Processed the FreshRetailNet-50K dataset and structured it for basic classification.
-        \item Built and trained the Vanilla RNN and Vanilla LSTM architectures, establishing the primary performance baselines (44K parameters, 0.785 F1-Score).
+        \item We started by researching older forecasting methods to understand how inventory prediction used to be done.
+        \item We cleaned up the FreshRetailNet-50K dataset and organized it so our models could read it.
+        \item We built and trained basic Vanilla RNN and Vanilla LSTM models to see how they performed, which gave us a baseline to beat (44K parameters, 0.785 F1-Score).
     \end{itemize}
     
-    \item \textbf{Month 2: Feature Explainability and Recurrent Engineering}
+    \item \textbf{Month 2: Feature Engineering and Building Our Custom Model}
     
     \begin{itemize}
-        \item Utilized ML Explainability (Integrated Gradients) to aggressively prune the dataset down to 6 critical features, drastically reducing model noise.
-        \item Designed the Dual-Stream processing pipeline to structurally isolate noisy demand variables from physical inventory variables.
-        \item Finalized the \textit{Dual-Stream Inventory Shortcut LSTM}, successfully reducing parameters to 4,600 while boosting performance beyond the 44K-parameter baseline.
+        \item We used Integrated Gradients to figure out which features actually mattered, and threw away the bad ones, leaving us with just 6 strong features.
+        \item We designed a new "Dual-Stream" setup that processes crazy demand spikes separately from hard inventory facts.
+        \item We finished building our custom \textit{Dual-Stream Inventory Shortcut LSTM}, which shrank the model down to just 4,600 parameters while actually beating the bigger baseline models.
     \end{itemize}
     
-    \item \textbf{Month 3: Linear Benchmarking and Final Evaluation}
+    \item \textbf{Month 3: Testing Linear Models and Final Results}
     
     \begin{itemize}
-        \item Developed a strict, standardized Top-15 holdout validation framework incorporating Focal Loss and dynamic threshold scanning.
-        \item Engineered and benchmarked the \textit{Multi-Kernel DLinear} to capture both rapid retail volatility and longer multi-day trends.
-        \item Generated all quantitative metrics, boxplots, and loss trajectory graphs to definitively prove the superiority of the Multi-Kernel DLinear model, culminating in the compilation of this final thesis report.
+        \item We set up a very strict testing process (using Focal Loss and dynamic threshold scanning) to make sure our results were completely fair and accurate.
+        \item We built and tested the \textit{Multi-Kernel DLinear} model to see if it could handle both sudden panic-buying and longer weekly trends.
+        \item We collected all our final numbers, created the graphs, proved that the Multi-Kernel DLinear was our best model, and wrote this final thesis report.
     \end{itemize}
 \end{enumerate}
