@@ -10,7 +10,7 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from datasets import load_dataset
+from pathlib import Path
 
 # Seed
 def set_seed(seed=42):
@@ -26,9 +26,20 @@ device = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if 
 print(f"=== Non-Linear DLinear Experiments ===")
 print(f"Using compute device: {device}\n")
 
-# Load FreshRetail Dataset
-print("Loading FreshRetailNet-50K dataset...")
-raw_df = load_dataset("Dingdong-Inc/FreshRetailNet-50K", split="train").to_pandas()
+# Load Local Parquet Dataset from Repository
+local_train_path = Path("data/train.parquet")
+local_top15_path = Path("data/top15_train.parquet")
+
+if local_train_path.exists():
+    print(f"Loading local dataset from repository: {local_train_path}")
+    raw_df = pd.read_parquet(local_train_path)
+elif local_top15_path.exists():
+    print(f"Loading local pre-filtered dataset from repository: {local_top15_path}")
+    raw_df = pd.read_parquet(local_top15_path)
+else:
+    print("Local parquet not found. Downloading via HuggingFace datasets...")
+    from datasets import load_dataset
+    raw_df = load_dataset("Dingdong-Inc/FreshRetailNet-50K", split="train").to_pandas()
 
 def to_float_list(value, length=24):
     if isinstance(value, np.ndarray):
@@ -210,7 +221,6 @@ class SwiGLUGatedDLinear(nn.Module):
         self.decomp = SeriesDecomp(kernel_size)
         in_flat = seq_len * input_dim
         
-        # SwiGLU projection for trend and seasonal
         self.w_s1 = nn.Linear(in_flat, hidden_dim)
         self.w_s2 = nn.Linear(in_flat, hidden_dim)
         self.w_s3 = nn.Linear(hidden_dim, 24)
@@ -224,7 +234,6 @@ class SwiGLUGatedDLinear(nn.Module):
         s_flat = seasonal_init.reshape(x.size(0), -1)
         t_flat = trend_init.reshape(x.size(0), -1)
 
-        # SwiGLU: (w1(x) * SiLU(w2(x))) -> w3
         s_hidden = self.w_s1(s_flat) * F.silu(self.w_s2(s_flat))
         s_out = self.w_s3(s_hidden)
 
@@ -240,7 +249,6 @@ class HourlySlot_NonLinearDLinear(nn.Module):
         self.decomp = SeriesDecomp(kernel_size)
         in_flat = seq_len * input_dim
         
-        # 24 dedicated 2-layer non-linear linear heads
         self.seasonal_slot_mlps = nn.ModuleList([
             nn.Sequential(
                 nn.Linear(in_flat, hidden_dim),
@@ -321,7 +329,7 @@ class MultiKernel_NonLinearDLinear(nn.Module):
 
         return trend_out + seasonal_out
 
-# 5. Multi-Kernel Hourly-Slot Non-Linear DLinear (Combining Multi-Scale + Non-Linearity + 24 Slot Heads)
+# 5. Multi-Kernel Hourly-Slot Non-Linear DLinear
 class MultiKernel_Slot_NonLinearDLinear(nn.Module):
     def __init__(self, seq_len=14, input_dim=10, hidden_dim=16):
         super().__init__()
