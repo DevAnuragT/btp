@@ -261,27 +261,28 @@
 % ==========================================
 \begin{frame}{Our Fix: Dual-Stream Inventory Shortcut LSTM}
   \begin{columns}[T]
-    \begin{column}{0.44\textwidth}
+    \begin{column}{0.48\textwidth}
       \centering
       \includegraphics[width=\textwidth,height=4.8cm,keepaspectratio]{architecture.jpeg}\\
       \vspace{1pt}
       \tiny{Dual-Stream: Demand LSTM + Inventory LSTM + Day-14 Shortcut}
     \end{column}
-    \begin{column}{0.54\textwidth}
+    \begin{column}{0.48\textwidth}
       \centering
-      \includegraphics[width=\textwidth,height=4.2cm,keepaspectratio]{images/dualstream_vs_normal_lstm_comparison.png}\\
+      \includegraphics[width=\textwidth,height=4.8cm,keepaspectratio]{images/dualstream_vs_normal_lstm_comparison.png}\\
       \vspace{1pt}
       \tiny{Architectural Impact: Dual Stream LSTM}
-      \vspace{4pt}
-      \begin{exampleblock}{Key Results}
-        \footnotesize
-        \begin{itemize}
-          \item \textbf{Inventory Shortcut}: F1 \textbf{0.7926}, MAE \textbf{3.97 hrs} at just 4,600 params.
-          \item Decoupled streams consistently beat all baseline LSTM sizes.
-        \end{itemize}
-      \end{exampleblock}
     \end{column}
   \end{columns}
+  
+  \vspace{4pt}
+  \begin{exampleblock}{Key Results}
+    \footnotesize
+    \begin{itemize}
+      \item \textbf{Inventory Shortcut}: F1 \textbf{0.7926}, MAE \textbf{3.97 hrs} at just 4,600 params.
+      \item Decoupled streams consistently beat all baseline LSTM sizes.
+    \end{itemize}
+  \end{exampleblock}
 \end{frame}
 
 % ==========================================
