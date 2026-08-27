@@ -226,58 +226,36 @@
 % ==========================================
 % SLIDE 7: ML EXPLAINABILITY & IG ANALYSIS
 % ==========================================
-\begin{frame}{ML Explainability: Integrated Gradients Analysis}
-  \begin{columns}[c]
-    \begin{column}{0.55\textwidth}
-      \centering
-      \includegraphics[width=\textwidth,height=5.6cm,keepaspectratio]{images/ig_heatmap.png}\\
-      \vspace{1pt}
-      \tiny{Attribution heatmap: all 11 features \& 14-day history (D-1 = most recent)}
-    \end{column}
-    \begin{column}{0.43\textwidth}
-      \centering
-      \includegraphics[width=\textwidth,height=5.6cm,keepaspectratio]{images/ig_barplot.png}\\
-      \vspace{1pt}
-      \tiny{Feature importance: top 6 (highlighted) far outrank remaining 5}
-      \vspace{3pt}
-      \begin{exampleblock}{\scriptsize Observation $\rightarrow$ Selection}
-        \scriptsize
-        Absolute IG attribution for the exploratory 11-feature baseline (14-day history). The model relies most strongly on recent inventory and sales-related signals. This distinct temporal behavior motivates the Dual-Stream LSTM, which processes both groups independently before a fusion layer. Attribution indicates feature influence, not direct interaction or causality.
-      \end{exampleblock}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-% ==========================================
-% SLIDE 8: LIMITATIONS OF BASELINE LSTM
-% ==========================================
-\begin{frame}{Limitations of Baseline LSTM}
+\begin{frame}{ML Explainability \& Baseline Limitations}
   \begin{columns}[T]
-    \begin{column}{0.48\textwidth}
+    \begin{column}{0.53\textwidth}
       \centering
-      \includegraphics[width=\textwidth,height=4.8cm,keepaspectratio]{images/lstm_cell.pdf}\\
-      \vspace{2pt}
-      \tiny{Standard LSTM Cell Architecture}
+      \includegraphics[width=\textwidth,height=4.5cm,keepaspectratio]{images/ig_heatmap.png}\\
+      \vspace{1pt}
+      \tiny{Attribution heatmap: 11-feature baseline (D-1 = most recent)}
     \end{column}
-    \begin{column}{0.48\textwidth}
+    \begin{column}{0.45\textwidth}
       \centering
-      \includegraphics[width=\textwidth,height=4.8cm,keepaspectratio]{images/normal_lstm_variations_comparison.png}\\
-      \vspace{2pt}
-      \tiny{F1-Score across LSTM hidden size variants (h=8 to h=96)}
+      \includegraphics[width=\textwidth,height=4.5cm,keepaspectratio]{images/ig_barplot.png}\\
+      \vspace{1pt}
+      \tiny{Feature importance: top 6 (highlighted) outrank remaining 5}
     \end{column}
   \end{columns}
   
-  \vspace{5pt}
-  \begin{alertblock}{Why Scaling Alone Doesn't Help}
-    \footnotesize
+  \vspace{3pt}
+  \begin{exampleblock}{\scriptsize Motivation for Dual-Stream Architecture}
+    \scriptsize
     \begin{itemize}
-      \item \textbf{F1 plateau} at $\sim$0.789 regardless of hidden size --- more params yield no gain.
-      \item Demand \& inventory share hidden state $h_t$ $\Rightarrow$ potential for \textbf{feature interference}.
-      \item IG analysis (prev. slide) shows distinct temporal behaviors, motivating \textbf{dedicated streams}.
+      \item \textbf{F1 Plateau:} Baseline LSTM peaks at $\sim$0.789 F1; simply scaling parameters yields no gain.
+      \item \textbf{Interference:} Sharing a single hidden state $h_t$ creates potential for demand/inventory interference.
+      \item \textbf{IG Analysis:} Absolute attribution reveals distinct temporal behaviors for demand vs. inventory.
     \end{itemize}
-  \end{alertblock}
+    \vspace{-1pt}
+    These findings motivate processing both streams independently before a task-specific fusion layer.
+  \end{exampleblock}
 \end{frame}
 
+% Slide deleted and merged into previous slide
 % ==========================================
 % SLIDE 9: DUAL-STREAM INVENTORY SHORTCUT LSTM
 % ==========================================
