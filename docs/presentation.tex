@@ -189,59 +189,97 @@
 % SLIDE 7: ML EXPLAINABILITY & SHAP/IG ANALYSIS
 % ==========================================
 \begin{frame}{ML Explainability: SHAP \& Integrated Gradients Analysis}
+  \centering
+  \vspace{0.1cm}
+  \includegraphics[width=0.40\textwidth]{images/ig_heatmap.png}\\
+  \vspace{1pt}
+  \tiny{Figure 2: Integrated Gradients Feature \& Temporal Attribution}
+  
   \begin{columns}[T]
-    \begin{column}{0.50\textwidth}
+    \begin{column}{0.48\textwidth}
       \begin{block}{Integrated Gradients (IG) Attribution}
+        \footnotesize
         \begin{itemize}
-          \item Discovered that \textbf{Demand Signals} (sales amount, discounts) and \textbf{Inventory Signals} (stockout counts, rolling stockouts) act on different temporal scales.
-          \item Demand features exhibit fast 1--3 day velocity, while inventory features exhibit 7-day weekly seasonality.
+          \item Discovered that \textbf{Demand Signals} (sales) and \textbf{Inventory Signals} (stockouts) act on different temporal scales.
+          \item Demand features exhibit fast 1--3 day velocity; inventory exhibits 7-day weekly seasonality.
         \end{itemize}
       \end{block}
-      
-      \begin{alertblock}{Identification of Feature Cross-Talk}
-        \begin{itemize}
-          \item Feeding demand \& inventory features into a single shared LSTM cell causes \textbf{gradient noise and interference}.
-          \item Inspired the design of \textbf{Dual-Stream Decoupling} to isolate demand and inventory features.
-        \end{itemize}
-      \end{alertblock}
     \end{column}
     
-    \begin{column}{0.46\textwidth}
-      \centering
-      \includegraphics[width=0.95\textwidth]{images/explainability_flow.png}\\
-      \vspace{2pt}
-      \tiny{Figure 2: Integrated Gradients Feature \& Temporal Attribution Flow}
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Identification of Feature Cross-Talk}
+        \footnotesize
+        \begin{itemize}
+          \item Feeding demand \& inventory features into a single shared LSTM cell causes \textbf{gradient noise and interference}.
+          \item Inspired the design of \textbf{Dual-Stream Decoupling} to completely isolate these signals.
+        \end{itemize}
+      \end{alertblock}
     \end{column}
   \end{columns}
 \end{frame}
 
 % ==========================================
-% SLIDE 8: ARCHITECTURAL INNOVATION 1: DUAL-STREAM LSTMS
+% SLIDE 8: BASELINE LSTM ARCHITECTURE
 % ==========================================
-\begin{frame}{Architectural Innovation 1: Dual-Stream Feature Decoupling}
+\begin{frame}{Baseline LSTM Architecture}
+  \begin{center}
+    \includegraphics[height=3.2cm,keepaspectratio]{images/lstm_cell.pdf}
+  \end{center}
+  \vspace{0.1cm}
+  \footnotesize
+  
   \begin{columns}[T]
-    \begin{column}{0.55\textwidth}
-      \centering
-      \includegraphics[width=\textwidth]{images/dualstream_vs_normal_lstm_comparison.png}
+    \begin{column}{0.48\textwidth}
+      \begin{block}{The LSTM Cell}
+        LSTMs manage temporal sequences through an internal memory cell $c_t$ and three regulating gates.
+        \begin{itemize}
+          \item \textbf{Forget Gate ($f_t$)}: Decides what past information to discard using a \textbf{Sigmoid} activation.
+          \item \textbf{Input Gate ($i_t$)}: Decides what new information to store, combining \textbf{Sigmoid} and \textbf{Tanh} activations.
+          \item \textbf{Output Gate ($o_t$)}: Controls the final output hidden state $h_t$ based on the filtered cell state.
+        \end{itemize}
+      \end{block}
     \end{column}
     
-    \begin{column}{0.42\textwidth}
-      \begin{block}{Dual-Stream LSTM Mechanism}
+    \begin{column}{0.48\textwidth}
+      \begin{alertblock}{Limitations in Retail}
         \begin{itemize}
-          \item Runs \textbf{two parallel 16-dim LSTMs}:
-            \begin{enumerate}
-              \item \textbf{Demand Stream}: Sales, discounts, sales momentum.
-              \item \textbf{Inventory Stream}: Stockout counts, rolling stockouts.
-            \end{enumerate}
-          \item Includes additive \textbf{ResNet residual shortcuts}.
+          \item A standard LSTM forces both highly volatile \textbf{demand features} (sudden spikes) and strictly physical \textbf{inventory features} into the same shared hidden state.
+          \item This causes the gates to struggle, leading to signal dilution and "gradient noise" over the 14-day window.
+        \end{itemize}
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ==========================================
+% SLIDE 9: DUAL-STREAM INVENTORY SHORTCUT LSTM
+% ==========================================
+\begin{frame}{Dual-Stream Inventory Shortcut Architecture}
+  \centering
+  \includegraphics[width=0.62\textwidth]{architecture.jpeg}
+  
+  \vspace{0.05cm}
+  
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Why Distribute Features?}
+        \footnotesize
+        \begin{itemize}
+          \item \textbf{Isolation}: We explicitly separate unpredictable demand metrics (e.g., sales) from hard physical inventory facts.
+          \item \textbf{Parallel Processing}: Prevents volatile demand data from corrupting the inventory state by using two independent LSTMs.
         \end{itemize}
       \end{block}
-      
-      \begin{block}{Empirical Gain}
+    \end{column}
+    
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{The Inventory Shortcut Mechanism}
+        \footnotesize
         \begin{itemize}
-          \item Boosts F1-Score from \textbf{0.7897} (Baseline Normal LSTM) to \textbf{0.7926} (\texttt{Dual-Stream Inventory}).
+          \item \textbf{Finding}: ML Explainability proved the \textbf{previous day's inventory} has massive impact.
+          \item \textbf{Solution}: We extracted 2 specific inventory features from Day 14 and bypassed the LSTMs entirely.
+          \item Routing directly to the final layer (\textbf{Final Hidden Size = 34}) guarantees retention of critical data.
         \end{itemize}
-      \end{block}
+      \end{exampleblock}
     \end{column}
   \end{columns}
 \end{frame}
