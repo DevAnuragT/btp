@@ -1,0 +1,248 @@
+\chapter{System Architecture and Methodology}
+\label{chap:methodology}
+
+This chapter breaks down the different models our team built to tackle the FreshRetailNet-50K hourly stockout problem. We followed a step-by-step process: we started by testing basic models to see how they behave, then we used machine learning explainability to figure out which features actually mattered, built our own custom LSTM model, and finally tested out some of the newest linear models.
+
+\section{Baseline Analysis}
+
+To get a solid starting point, we set up a standard test where the models looked at 14 days of history to predict the next 24 hours. We wanted to see how well these basic models could handle messy retail data before we tried to invent our own solution.
+
+\subsection{Baseline SimpleRNN}
+We started with the most basic model for time-series data: a Simple Recurrent Neural Network (RNN). We set it up with a hidden size of 64, giving it about 14,744 parameters to learn. While it was fast to run, it had a lot of trouble remembering things over the full 14 days (a common issue called the vanishing gradient problem). It only achieved an Hour-Level F1-Score of 0.7750, which told our team that simple RNNs are not powerful enough to understand complex shopping habits.
+
+\subsection{Baseline Vanilla and Canonical LSTM}
+To fix the problems we saw with the SimpleRNN, we built a Baseline LSTM. LSTMs use special "gates" (Forget, Input, and Output) that help the model hold onto important information from earlier in the 14-day window. Mathematically, the LSTM updates its hidden state $h_t$ and cell state $c_t$ at each step $t$ like this:
+
+\begin{align}
+    f_t &= \sigma(W_f \cdot [h_{t-1}, x_t] + b_f) \quad &\text{(Forget Gate)} \\
+    i_t &= \sigma(W_i \cdot [h_{t-1}, x_t] + b_i) \quad &\text{(Input Gate)} \\
+    \tilde{c}_t &= \tanh(W_c \cdot [h_{t-1}, x_t] + b_c) \quad &\text{(Candidate Cell State)} \\
+    c_t &= f_t \odot c_{t-1} + i_t \odot \tilde{c}_t \quad &\text{(Final Cell State)} \\
+    o_t &= \sigma(W_o \cdot [h_{t-1}, x_t] + b_o) \quad &\text{(Output Gate)} \\
+    h_t &= o_t \odot \tanh(c_t) \quad &\text{(Hidden State)}
+\end{align}
+
+At first, we fed all 13 original features into it and set a hidden size of 96. This Vanilla LSTM was pretty heavy, with about 44,952 parameters, but it performed better with an F1-Score of 0.7852.
+
+After figuring out that we did not need all 13 features (which we explain in Section 4.2), we shrank this down into what we call the \textbf{Canonical LSTM}. We fed it just the 6 most important features and lowered the hidden size to 32. 
+
+\begin{figure}[!htbp]
+    \centering
+    \resizebox{0.9\textwidth}{!}{
+    \begin{tikzpicture}[
+        node distance=1.5cm and 2cm,
+        box/.style={rectangle, draw, thick, minimum width=2.5cm, minimum height=1cm, align=center},
+        arrow/.style={-latex, thick}
+    ]
+    % Nodes
+    \node[box, fill=blue!10] (input) {Input Sequence \\ $X_{t=1 \dots 14} \in \mathbb{R}^{14 \times 6}$};
+    \node[box, fill=green!10, right=of input] (lstm) {LSTM Layer \\ (Hidden Size: 32)};
+    \node[box, fill=orange!10, right=of lstm] (dense) {Dense Linear Head \\ $\mathbb{R}^{32} \rightarrow \mathbb{R}^{24}$};
+    \node[box, fill=red!10, right=of dense] (output) {Predicted Hourly \\ Stock Status ($Y \in \mathbb{R}^{24}$)};
+    
+    % Edges
+    \draw[arrow] (input) -- node[above] {$t=1 \dots 14$} (lstm);
+    \draw[arrow] (lstm) -- node[above] {$h_{14}$} (dense);
+    \draw[arrow] (dense) -- (output);
+    
+    % Internal LSTM loop indication
+    \draw[-latex, thick] (lstm.north) .. controls +(up:0.8cm) and +(right:0.8cm) .. (lstm.east);
+    \node[above=0.8cm of lstm] {Temporal Unrolling};
+    \end{tikzpicture}
+    }
+    \caption{The Canonical LSTM processing pipeline for 24-hour stockout prediction.}
+    \label{fig:canonical_lstm}
+\end{figure}
+
+This Canonical LSTM was much faster (only 19,992 parameters) and slightly more accurate (0.7880 F1-Score). However, it still had a flaw: it forced the LSTM gates to track crazy demand spikes and actual physical inventory limits inside the exact same hidden state $h_t$, which confused the model.
+
+\subsection{Baseline Transformers}
+Because everyone uses Transformers nowadays, our team also tested some heavy Transformer models, specifically PatchTST \cite{nie2023patchtst} and Temporal Fusion Transformers (TFT) \cite{lim2021tft}. Even though they were massive (over 280,000 parameters), they actually did worse than our basic LSTM, getting F1-Scores around 0.7540 to 0.7685. Transformers are built to look at everything at once, which didn't fit well with our short 14-day history where physical stock goes down step-by-step. They were just too big for the job.
+
+\section{Figuring Out Feature Importance}
+
+Early on, our team wondered if we really needed all 13 features the dataset provided. Sometimes giving a model too much messy data just confuses it (which is probably why the Transformers failed). To fix this scientifically, we used a technique called Integrated Gradients (IG) \cite{sundararajan2017ig} to show us exactly what the model was paying attention to over the 14 days.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.75\textwidth]{../btp-repo/docs/images/ig_heatmap.png}
+    \caption{Integrated Gradients Heatmap revealing the disproportionate importance of recent inventory signals compared to historical static features.}
+    \label{fig:ig_heatmap}
+\end{figure}
+
+As shown in Figure \ref{fig:ig_heatmap}, this test showed us two really important things that changed how we built the rest of our models:
+\begin{enumerate}
+    \item \textbf{Recent Data is King:} The data from the last two days ($t=13$ and $t=14$) was way more important than what happened two weeks ago.
+    \item \textbf{Inventory Beats Demand:} Hard numbers about how much stock is left (like \texttt{stock\_hour6\_22\_cnt}) were far more useful than messy data about past sales or discounts.
+\end{enumerate}
+
+Based on this, our team threw out the bad data and kept only 6 essential features, giving our models a much cleaner signal to learn from.
+
+\section{Building Our Custom LSTMs}
+
+Armed with just the best features, our team started building a custom model piece-by-piece. We tested different structural setups to see what actually improved predictions. Table \ref{tab:rnn_variations} shows the steps we took.
+
+\begin{table}[!htbp]
+\centering
+\caption{Systematic Progression of Recurrent Architectural Variations}
+\label{tab:rnn_variations}
+\begin{tabular}{llrr}
+\toprule
+\textbf{Stage} & \textbf{Architecture} & \textbf{Parameters} & \textbf{F1-Score} \\
+\midrule
+1 & Baseline SimpleRNN (h=64) & 14,744 & 0.7750 \\
+2 & Dual-Stream SimpleRNN & 5,016 & 0.7782 \\
+3 & Baseline Vanilla LSTM (h=96) & 44,952 & 0.7852 \\
+4 & Feature-Reduced Canonical LSTM (h=32) & 19,992 & 0.7880 \\
+5 & \textbf{Dual-Stream Inventory Shortcut LSTM} & \textbf{4,600} & \textbf{0.7941} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Our Final Custom LSTM: Dual-Stream Inventory Shortcut}
+
+To fix the confusion happening inside the Canonical LSTM, we built our final custom model: the \textbf{Dual-Stream Inventory Shortcut LSTM}. 
+
+We split the 6 good features into two groups: 4 features for Demand, and 2 features for Inventory. We gave each group its own separate LSTM to process. On top of that, because our heatmap showed that the very last day's inventory is the most important thing, we added a special "Shortcut." This shortcut takes the inventory numbers from Day 14 and sends them straight to the final output, completely bypassing the LSTMs. This guarantees that the LSTM never accidentally "forgets" the most important data.
+
+\begin{figure}[!htbp]
+    \centering
+    \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[
+        node distance=1.5cm and 1cm,
+        box/.style={rectangle, draw, thick, minimum width=2.5cm, minimum height=1cm, align=center},
+        arrow/.style={-latex, thick}
+    ]
+    % Inputs
+    \node[box, fill=blue!10] (demand_in) {Demand Features \\ $X_{demand} \in \mathbb{R}^{14 \times 4}$};
+    \node[box, fill=blue!10, below=1.5cm of demand_in] (inv_in) {Inventory Features \\ $X_{inv} \in \mathbb{R}^{14 \times 2}$};
+    
+    % LSTMs
+    \node[box, fill=green!10, right=1.5cm of demand_in] (demand_lstm) {Demand LSTM \\ $h = 16$};
+    \node[box, fill=green!10, right=1.5cm of inv_in] (inv_lstm) {Inventory LSTM \\ $h = 16$};
+    
+    % Concat and Output
+    \node[box, fill=yellow!20, right=2cm of demand_lstm, yshift=-1.25cm] (concat) {Concatenation \\ Fusion Layer};
+    \node[box, fill=orange!10, right=1.5cm of concat] (dense) {Linear Head};
+    \node[box, fill=red!10, right=1.5cm of dense] (output) {$Y \in \mathbb{R}^{24}$};
+    
+    % Standard Paths
+    \draw[arrow] (demand_in) -- (demand_lstm);
+    \draw[arrow] (inv_in) -- (inv_lstm);
+    \draw[arrow] (demand_lstm.east) -- ++(1,0) |- (concat.160);
+    \draw[arrow] (inv_lstm.east) -- ++(1,0) |- (concat.200);
+    
+    % Shortcut Path
+    \draw[arrow, dashed, thick, blue] (inv_in.south) -- ++(0,-0.8) -| node[pos=0.25, above, text=blue, font=\small] {Inventory Shortcut (Extract $t=14$)} (concat.south);
+    
+    % Final Paths
+    \draw[arrow] (concat) -- (dense);
+    \draw[arrow] (dense) -- (output);
+    \end{tikzpicture}
+    }
+    \caption{The Dual-Stream Inventory Shortcut LSTM Architecture. Notice the dashed shortcut preserving the $t=14$ state.}
+    \label{fig:dual_stream_lstm}
+\end{figure}
+
+This new design dropped the parameter count all the way down to just 4,600, but pushed our F1-Score up to 0.7941, making it our best recurrent model by far.
+
+\section{DLinear (Decomposition Linear) Architectures}
+
+After doing everything we could with LSTMs, our team wanted to see if newer Decomposition Linear (DLinear) models could do better. According to Zeng et al. (2023) \cite{zeng2023dlinear}, these simple, single-layer models that split time-series data into Trends and Seasons can sometimes beat complex deep learning models because they are simpler and don't get stuck trying to remember long sequences.
+
+\subsection{Standard DLinear}
+
+Standard DLinear takes the input data $X$ and splits it into a Trend piece ($X_{trend}$, found by averaging recent data) and a Seasonal piece ($X_{seasonal}$, found by subtracting the Trend from the original). The math looks like this:
+
+\begin{align}
+    X_{trend} &= \text{AvgPool1D}(X) \\
+    X_{seasonal} &= X - X_{trend}
+\end{align}
+
+Then, it just uses standard linear layers ($W_{trend}, W_{seasonal}$) to map these pieces directly to the 24-hour prediction. It is very fast and easy to understand:
+
+\begin{equation}
+    Y_{pred} = (W_{trend} \cdot X_{trend}) + (W_{seasonal} \cdot X_{seasonal})
+\end{equation}
+
+\begin{figure}[!htbp]
+    \centering
+    \resizebox{0.9\textwidth}{!}{
+    \begin{tikzpicture}[
+        node distance=1cm and 1.5cm,
+        box/.style={rectangle, draw, thick, minimum width=2.5cm, minimum height=1cm, align=center},
+        arrow/.style={-latex, thick}
+    ]
+    % Input
+    \node[box, fill=blue!10] (input) {Input Sequence \\ $X$};
+    
+    % Decomposition
+    \node[box, fill=gray!20, right=1.5cm of input] (ma) {Moving Average \\ (Trend Extraction)};
+    \node[box, fill=gray!10, below=1cm of ma] (residual) {Subtraction \\ ($X - Trend$)};
+    
+    % Linear Layers
+    \node[box, fill=green!10, right=1.5cm of ma] (linear_trend) {Linear Layer \\ (Trend)};
+    \node[box, fill=green!10, right=1.5cm of residual] (linear_res) {Linear Layer \\ (Residual)};
+    
+    % Output
+    \node[box, fill=yellow!20, right=1.5cm of linear_trend, yshift=-1cm] (add) {Addition \\ (Trend + Residual)};
+    \node[box, fill=red!10, right=1cm of add] (output) {Final Prediction \\ $Y \in \mathbb{R}^{24}$};
+    
+    % Edges
+    \draw[arrow] (input) -- (ma);
+    \draw[arrow] (input) |- (residual);
+    \draw[arrow] (ma) -- node[left] {$-$} (residual);
+    \draw[arrow] (ma) -- (linear_trend);
+    \draw[arrow] (residual) -- (linear_res);
+    \draw[arrow] (linear_trend.east) -- ++(0.5,0) |- (add.160);
+    \draw[arrow] (linear_res.east) -- ++(0.5,0) |- (add.200);
+    \draw[arrow] (add) -- (output);
+    \end{tikzpicture}
+    }
+    \caption{The Standard DLinear Architecture. Trend and residual mapped via independent linear layers.}
+    \label{fig:dlinear_arch}
+\end{figure}
+
+\subsection{Multi-Kernel DLinear}
+
+To make DLinear work even better for the crazy ups and downs of grocery shopping, our team built the \textbf{Multi-Kernel DLinear}. Instead of just doing one average to find the trend, this model runs multiple averages at the same time (like $k=3, 5, 7$) to catch both sudden panic-buying and smooth weekly habits. It groups all these trends together like this:
+
+\begin{equation}
+    X_{trend} = \text{Concat}(\text{AvgPool1D}_{k=3}(X), \text{AvgPool1D}_{k=5}(X), \text{AvgPool1D}_{k=7}(X))
+\end{equation}
+
+\begin{figure}[!htbp]
+    \centering
+    \resizebox{0.8\textwidth}{!}{
+    \begin{tikzpicture}[
+        node distance=0.8cm and 1cm,
+        box/.style={rectangle, draw, thick, minimum width=2.5cm, minimum height=0.8cm, align=center},
+        arrow/.style={-latex, thick}
+    ]
+    % Input
+    \node[box, fill=blue!10] (input) {Input $X$};
+    
+    % Kernels
+    \node[box, fill=gray!20, right=1.5cm of input, yshift=1.5cm] (ma3) {MA Kernel ($k=3$)};
+    \node[box, fill=gray!20, right=1.5cm of input] (ma5) {MA Kernel ($k=5$)};
+    \node[box, fill=gray!20, right=1.5cm of input, yshift=-1.5cm] (ma7) {MA Kernel ($k=7$)};
+    
+    % Concat
+    \node[box, fill=yellow!20, right=1.5cm of ma5] (concat) {Concatenate Trends};
+    
+    % Linear
+    \node[box, fill=green!10, right=1.5cm of concat] (linear) {Linear Head $\rightarrow Y$};
+    
+    % Edges
+    \draw[arrow] (input.east) -- ++(0.5,0) |- (ma3.west);
+    \draw[arrow] (input) -- (ma5);
+    \draw[arrow] (input.east) -- ++(0.5,0) |- (ma7.west);
+    \draw[arrow] (ma3.east) -- ++(0.5,0) |- (concat.150);
+    \draw[arrow] (ma5) -- (concat);
+    \draw[arrow] (ma7.east) -- ++(0.5,0) |- (concat.210);
+    \draw[arrow] (concat) -- (linear);
+    \end{tikzpicture}
+    }
+    \caption{The Multi-Kernel DLinear extraction phase. Multiple kernels capture volatility at different frequencies.}
+    \label{fig:multi_kernel_dlinear}
+\end{figure}

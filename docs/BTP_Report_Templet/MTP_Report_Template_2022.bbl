@@ -1,0 +1,59 @@
+\begin{thebibliography}{10}
+
+\bibitem{hochreiter1997long}
+S.~Hochreiter and J.~Schmidhuber, ``Long short-term memory,'' {\em Neural
+  computation}, vol.~9, no.~8, pp.~1735--1780, 1997.
+
+\bibitem{zhou2021informer}
+H.~Zhou, S.~Zhang, J.~Peng, S.~Zhang, J.~Li, H.~Xiong, and W.~Zhang,
+  ``Informer: Beyond efficient transformer for long sequence time-series
+  forecasting,'' in {\em Proceedings of the AAAI Conference on Artificial
+  Intelligence}, vol.~35, pp.~11106--11115, 2021.
+
+\bibitem{wu2021autoformer}
+H.~Wu, J.~Xu, J.~Wang, and M.~Long, ``Autoformer: Decomposition transformers
+  with auto-correlation for long-term series forecasting,'' in {\em Advances in
+  Neural Information Processing Systems}, vol.~34, pp.~22419--22430, 2021.
+
+\bibitem{gorishniy2021revisiting}
+Y.~Gorishniy, I.~Rubachev, V.~Khrulkov, and A.~Babenko, ``Revisiting deep
+  learning models for tabular data,'' {\em Advances in Neural Information
+  Processing Systems}, vol.~34, pp.~18932--18943, 2021.
+
+\bibitem{zeng2023dlinear}
+A.~Zeng, M.~Chen, L.~Zhang, and Q.~Qi, ``Are transformers effective for time
+  series forecasting?,'' in {\em Proceedings of the AAAI Conference on
+  Artificial Intelligence}, vol.~37, pp.~11121--11128, 2023.
+
+\bibitem{syntetos2016}
+A.~A. Syntetos, M.~Z. Babai, J.~E. Boylan, and P.~Syntetos, ``Supply chain
+  forecasting: Theory, practice, their intersection and the future,'' {\em
+  European Journal of Operational Research}, vol.~252, no.~1, pp.~1--54, 2016.
+
+\bibitem{nie2023patchtst}
+Y.~Nie, N.~H. Nguyen, P.~Sinthong, and J.~Kalagnanam, ``A time series is worth
+  64 words: Long-term forecasting with transformers,'' in {\em International
+  Conference on Learning Representations}, 2023.
+
+\bibitem{lim2021tft}
+B.~Lim, S.~{\"O}. Ar{\i}k, N.~Loeff, and T.~Pfister, ``Temporal fusion
+  transformers for interpretable multi-horizon time series forecasting,'' {\em
+  International Journal of Forecasting}, vol.~37, no.~4, pp.~1748--1764, 2021.
+
+\bibitem{sundararajan2017ig}
+M.~Sundararajan, A.~Taly, and Q.~Yan, ``Axiomatic attribution for deep
+  networks,'' in {\em International conference on machine learning},
+  pp.~3319--3328, PMLR, 2017.
+
+\bibitem{challu2023nhits}
+C.~Challu, K.~G. Olivares, B.~N. Oreshkin, F.~Garza, M.~Mergenthaler-Canseco,
+  and A.~Dubrawski, ``N-hits: Neural hierarchical interpolation for time series
+  forecasting,'' in {\em Proceedings of the AAAI Conference on Artificial
+  Intelligence}, vol.~37, pp.~6989--6997, 2023.
+
+\bibitem{lundberg2017shap}
+S.~M. Lundberg and S.-I. Lee, ``A unified approach to interpreting model
+  predictions,'' in {\em Advances in neural information processing systems},
+  vol.~30, 2017.
+
+\end{thebibliography}

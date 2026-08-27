@@ -1,0 +1,74 @@
+\chapter{Results and Conclusion}
+\label{chap:results}
+
+As our project went on, we knew we had to compare our custom LSTM models against the newest linear models to see which was truly better. This chapter explains how we tested everything fairly, shows our final numbers, and gives our overall conclusion.
+
+\section{Standardized Evaluation Framework}
+
+To make sure we were comparing apples to apples, our team set up a very strict testing process. This stopped any model from looking better just because of lucky guesses or messy data:
+
+\begin{itemize}
+    \item \textbf{Dataset Scope:} We only tested the top 15 busiest store-product combinations. This stopped the models from learning useless patterns from items that never sell anyway.
+    \item \textbf{Holdout Strategy:} We used a strict timeline split. We hid the last 15 days of the dataset from the models completely, and only used those days for the final test.
+    \item \textbf{Optimization:} In retail, stockouts don't happen as often as regular sales. To fix this imbalance, we trained the models using \textbf{Focal Loss} instead of standard Binary Cross-Entropy. The Focal Loss is defined mathematically as:
+    \begin{equation}
+        FL(p_t) = -\alpha_t (1 - p_t)^\gamma \log(p_t)
+    \end{equation}
+    where $p_t$ is the model's estimated probability for the stockout class. We configured the focusing parameter $\gamma = 2.0$ and the balancing factor $\alpha = 0.5$.
+    \item \textbf{Dynamic Thresholding:} Instead of just picking a standard 50/50 cutoff for predictions, we had the computer scan all cutoffs from 10\% to 90\% on a practice set to find the perfect spot that maximized the F1-Score.
+\end{itemize}
+
+\section{Final Empirical Results}
+
+We tested our main recurrent models against a few versions of the DLinear architecture (which we talked about in Chapter 4). You can see the final scores and how big each model is in Table \ref{tab:final_variants}.
+
+\begin{table}[!htbp]
+\centering
+\caption{Performance Comparison of Final Evaluated Architectures}
+\label{tab:final_variants}
+\begin{tabular}{lrr}
+\toprule
+\textbf{Architecture} & \textbf{Parameters} & \textbf{Hour-Level F1} \\
+\midrule
+Vanilla LSTM & 44,952 & 0.7850 \\
+Dual-Stream Inventory Shortcut LSTM & 4,600 & 0.7941 \\
+Standard DLinear & 6,768 & 0.7932 \\
+Hourly Slot-Specific DLinear & 6,744 & 0.8058 \\
+\textbf{Multi-Kernel DLinear} & \textbf{13,539} & \textbf{0.8131} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.75\textwidth]{../btp-repo/docs/images/lstm_vs_dlinear_comparison.png}
+    \caption{Final Empirical Comparison: The linear architectures systematically outperform the recurrent LSTM bounds.}
+    \label{fig:final_comparison}
+\end{figure}
+
+The numbers clearly showed that the \textbf{Multi-Kernel DLinear} was the overall winner. It hit a peak F1-Score of \textbf{0.8131} while using only 13,539 parameters. It beat both our custom LSTM and all the basic baseline models (as you can see in Figure \ref{fig:final_comparison}). 
+
+When we looked at all the different types of models we tried (Figure \ref{fig:family_comparison}), we saw that while the older recurrent models eventually stop improving, the linear models are faster, smaller, and just better at predicting exact hourly stockouts.
+
+\begin{figure}[!htbp]
+    \centering
+    \includegraphics[width=0.75\textwidth]{../btp-repo/docs/images/hourly_f1_vs_params_by_family.png}
+    \caption{Broad comparison across model families, illustrating the parameter-efficiency dominance of DLinear variants on the FreshRetailNet-50K task.}
+    \label{fig:family_comparison}
+\end{figure}
+
+\section{Conclusion}
+
+This project took on the real-world problem of predicting hourly stockouts in fast-paced grocery delivery. By moving away from predicting daily totals and focusing on specific hour-by-hour predictions, our team tackled a problem that actually costs delivery apps a lot of customers.
+
+Going through all these different models taught our team a few big lessons:
+
+\begin{enumerate}
+    \item \textbf{Good Features Matter Most:} Getting rid of bad data and focusing on a few strong features helped the models way more than just making the models bigger.
+    \item \textbf{Routing the Data Helps:} When building LSTMs, separating the demand numbers from the inventory numbers, and taking a "shortcut" for the most recent day's data, stopped the model from forgetting the important stuff.
+    \item \textbf{Linear Models Win Here:} In our strict testing, we proved that simple Decomposition Linear (DLinear) models are actually better for this specific short-term forecasting job than complex deep learning LSTMs.
+\end{enumerate}
+
+While our Dual-Stream Inventory Shortcut LSTM was our best idea for a recurrent model, the \textbf{Multi-Kernel DLinear} is the final model we recommend using in the real world. Because it doesn't have messy recurrent memory, it is very small (only 13,539 parameters) and fast. By running multiple averages at the same time, it easily handles the short 14-day history, catching both sudden panic-buying and smooth weekly trends to get the highest F1-Score of 0.8131. 
+
+By predicting exactly which hour a shelf will empty, this tool can help grocery managers restock shelves before they run out. This means less spoiled food, less wasted money, and happier customers when they open the app to order.

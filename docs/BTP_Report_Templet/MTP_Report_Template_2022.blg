@@ -1,0 +1,58 @@
+This is BibTeX, Version 0.99e (TeX Live 2026/Homebrew)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: MTP_Report_Template_2022.aux
+A level-1 auxiliary file: FrontPages/title_page.aux
+A level-1 auxiliary file: FrontPages/Certificate.aux
+A level-1 auxiliary file: FrontPages/Acknowledgement.aux
+A level-1 auxiliary file: chapters/1/introduction.aux
+A level-1 auxiliary file: chapters/2/literature_review.aux
+A level-1 auxiliary file: chapters/3/thesis_objectives.aux
+A level-1 auxiliary file: chapters/4/system_architecture.aux
+A level-1 auxiliary file: chapters/5/tasks_completed.aux
+A level-1 auxiliary file: chapters/6/results.aux
+The style file: ieeetr.bst
+Database file #1: references.bib
+Warning--can't use both volume and number fields in zhou2021informer
+Warning--empty publisher in lundberg2017shap
+You've used 11 entries,
+            1876 wiz_defined-function locations,
+            552 strings with 5918 characters,
+and the built_in function-call counts, 4138 in all, are:
+= -- 412
+> -- 154
+< -- 0
++ -- 55
+- -- 44
+* -- 303
+:= -- 543
+add.period$ -- 11
+call.type$ -- 11
+change.case$ -- 11
+chr.to.int$ -- 0
+cite$ -- 13
+duplicate$ -- 213
+empty$ -- 386
+format.name$ -- 44
+if$ -- 1009
+int.to.chr$ -- 0
+int.to.str$ -- 11
+missing$ -- 11
+newline$ -- 36
+num.names$ -- 11
+pop$ -- 48
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 0
+skip$ -- 171
+stack$ -- 0
+substring$ -- 371
+swap$ -- 104
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 0
+warning$ -- 2
+while$ -- 38
+width$ -- 13
+write$ -- 112
+(There were 2 warnings)

@@ -31,7 +31,11 @@
 
 % Title Information
 \title[Next-Day Stock Status Prediction]{Next-Day Stock Status Prediction in Fresh Retail}
-\author[Anurag, Samyak Choudhary, Vibhor]{Anurag Thakur \quad Samyak Choudhary\quad Vibhor Kumar}
+\author[Anurag, Samyak, Vibhor]{
+  Anurag Thakur \\ \scriptsize 2023IMG-008 \and
+  Samyak Choudhary \\ \scriptsize 2023IMG-044 \and
+  Vibhor Kumar \\ \scriptsize 2023IMG-054
+}
 \institute[BTP 2026]{Department of Information Technology\\Bachelor of Technology Project (BTP)}
 \date{August 2026}
 
@@ -151,7 +155,8 @@
       
       \begin{block}{SKU Statistical Ranking Formula}
         \small
-        $\text{Score} = 0.40 \times \text{Sales} + 0.25 \times \text{Stockout Hours} \\ + 0.20 \times \text{Stockout Days} + 0.15 \times \text{Sales Std}$
+        $\text{Score} = 0.40 \times \text{Sales} + 0.25 \times \text{Stockout Hours}$\\
+        $+ 0.20 \times \text{Stockout Days} + 0.15 \times \text{Sales Std}$
       \end{block}
     \end{column}
     
@@ -219,65 +224,54 @@
 \end{frame}
 
 % ==========================================
-% SLIDE 7: ML EXPLAINABILITY & SHAP/IG ANALYSIS
+% SLIDE 7: ML EXPLAINABILITY & IG ANALYSIS
 % ==========================================
-\begin{frame}{ML Explainability: SHAP \& Integrated Gradients Analysis}
-  \centering
-  \vspace{0.1cm}
-  \includegraphics[width=0.40\textwidth]{images/ig_heatmap.png}\\
-  \vspace{1pt}
-  \tiny{Figure 2: Integrated Gradients Feature \& Temporal Attribution}
-  
-  \begin{columns}[T]
-    \begin{column}{0.48\textwidth}
-      \begin{block}{Integrated Gradients (IG) Attribution}
-        \footnotesize
-        \begin{itemize}
-          \item Discovered that \textbf{Demand Signals} (sales) and \textbf{Inventory Signals} (stockouts) act on different temporal scales.
-          \item Demand features exhibit fast 1--3 day velocity; inventory exhibits 7-day weekly seasonality.
-        \end{itemize}
-      \end{block}
+\begin{frame}{ML Explainability: Integrated Gradients Analysis}
+  \begin{columns}[c]
+    \begin{column}{0.55\textwidth}
+      \centering
+      \includegraphics[width=\textwidth,height=5.8cm,keepaspectratio]{images/ig_heatmap.png}\\
+      \vspace{1pt}
+      \tiny{Attribution heatmap: all 13 features \& 14-day history (D-1 = most recent)}
     \end{column}
-    
-    \begin{column}{0.48\textwidth}
-      \begin{alertblock}{Identification of Feature Cross-Talk}
-        \footnotesize
-        \begin{itemize}
-          \item Feeding demand \& inventory features into a single shared LSTM cell causes \textbf{gradient noise and interference}.
-          \item Inspired the design of \textbf{Dual-Stream Decoupling} to completely isolate these signals.
-        \end{itemize}
-      \end{alertblock}
+    \begin{column}{0.43\textwidth}
+      \centering
+      \includegraphics[width=\textwidth,height=5.8cm,keepaspectratio]{images/ig_barplot.png}\\
+      \vspace{1pt}
+      \tiny{Feature importance: top 6 (highlighted) far outrank remaining 7}
+      \vspace{3pt}
+      \begin{exampleblock}{\scriptsize Observation $\rightarrow$ Selection}
+        \scriptsize
+        Out of all 13 features, IG reveals the same 6 features consistently dominate across time steps and samples. Weather \& activity features show near-zero attribution. This motivates our \textbf{feature reduction to 6 signals} and the dual-stream split between demand \& inventory.
+      \end{exampleblock}
     \end{column}
   \end{columns}
 \end{frame}
 
 % ==========================================
-% SLIDE 8: BASELINE LSTM ARCHITECTURE
+% SLIDE 8: LIMITATIONS OF BASELINE LSTM
 % ==========================================
-\begin{frame}{Baseline LSTM Architecture}
-  \begin{center}
-    \includegraphics[height=3.2cm,keepaspectratio]{images/lstm_cell.pdf}
-  \end{center}
-  \vspace{0.1cm}
-  \footnotesize
-  
+\begin{frame}{Limitations of Baseline LSTM}
   \begin{columns}[T]
-    \begin{column}{0.48\textwidth}
-      \begin{block}{The LSTM Cell}
-        LSTMs manage temporal sequences through an internal memory cell $c_t$ and three regulating gates.
-        \begin{itemize}
-          \item \textbf{Forget Gate ($f_t$)}: Decides what past information to discard using a \textbf{Sigmoid} activation.
-          \item \textbf{Input Gate ($i_t$)}: Decides what new information to store, combining \textbf{Sigmoid} and \textbf{Tanh} activations.
-          \item \textbf{Output Gate ($o_t$)}: Controls the final output hidden state $h_t$ based on the filtered cell state.
-        \end{itemize}
-      \end{block}
+    \begin{column}{0.35\textwidth}
+      \centering
+      \vspace{0.3cm}
+      \includegraphics[width=\textwidth,keepaspectratio]{images/lstm_cell.pdf}\\
+      \vspace{2pt}
+      \tiny{Standard LSTM Cell Architecture}
     \end{column}
-    
-    \begin{column}{0.48\textwidth}
-      \begin{alertblock}{Limitations in Retail}
+    \begin{column}{0.62\textwidth}
+      \centering
+      \includegraphics[width=\textwidth,height=4.0cm,keepaspectratio]{images/normal_lstm_variations_comparison.png}\\
+      \vspace{1pt}
+      \tiny{F1-Score across LSTM hidden size variants (h=8 to h=96)}
+      \vspace{4pt}
+      \begin{alertblock}{Why Scaling Alone Doesn't Help}
+        \footnotesize
         \begin{itemize}
-          \item A standard LSTM forces both highly volatile \textbf{demand features} (sudden spikes) and strictly physical \textbf{inventory features} into the same shared hidden state.
-          \item This causes the gates to struggle, leading to signal dilution and "gradient noise" over the 14-day window.
+          \item \textbf{F1 plateau} at $\sim$0.789 regardless of hidden size --- more params yield no gain.
+          \item Demand \& inventory share hidden state $h_t$ $\Rightarrow$ \textbf{feature cross-talk}.
+          \item IG analysis (prev. slide) proves these signals need \textbf{dedicated streams}.
         \end{itemize}
       \end{alertblock}
     \end{column}
@@ -287,30 +281,25 @@
 % ==========================================
 % SLIDE 9: DUAL-STREAM INVENTORY SHORTCUT LSTM
 % ==========================================
-\begin{frame}{Dual-Stream Inventory Shortcut Architecture}
-  \centering
-  \includegraphics[width=0.62\textwidth]{architecture.jpeg}
-  
-  \vspace{0.05cm}
-  
+\begin{frame}{Our Fix: Dual-Stream Inventory Shortcut LSTM}
   \begin{columns}[T]
-    \begin{column}{0.48\textwidth}
-      \begin{block}{Why Distribute Features?}
-        \footnotesize
-        \begin{itemize}
-          \item \textbf{Isolation}: We explicitly separate unpredictable demand metrics (e.g., sales) from hard physical inventory facts.
-          \item \textbf{Parallel Processing}: Prevents volatile demand data from corrupting the inventory state by using two independent LSTMs.
-        \end{itemize}
-      \end{block}
+    \begin{column}{0.44\textwidth}
+      \centering
+      \includegraphics[width=\textwidth,height=4.8cm,keepaspectratio]{architecture.jpeg}\\
+      \vspace{1pt}
+      \tiny{Dual-Stream: Demand LSTM + Inventory LSTM + Day-14 Shortcut}
     \end{column}
-    
-    \begin{column}{0.48\textwidth}
-      \begin{exampleblock}{The Inventory Shortcut Mechanism}
+    \begin{column}{0.54\textwidth}
+      \centering
+      \includegraphics[width=\textwidth,height=4.2cm,keepaspectratio]{images/dualstream_evolution_comparison.png}\\
+      \vspace{1pt}
+      \tiny{F1, Recall \& MAE: all dual-stream variants vs.~baseline LSTM}
+      \vspace{4pt}
+      \begin{exampleblock}{Key Results}
         \footnotesize
         \begin{itemize}
-          \item \textbf{Finding}: ML Explainability proved the \textbf{previous day's inventory} has massive impact.
-          \item \textbf{Solution}: We extracted 2 specific inventory features from Day 14 and bypassed the LSTMs entirely.
-          \item Routing directly to the final layer (\textbf{Final Hidden Size = 34}) guarantees retention of critical data.
+          \item \textbf{Inventory Shortcut}: F1 \textbf{0.7926}, MAE \textbf{3.97 hrs} at just 4,600 params.
+          \item Decoupled streams consistently beat all baseline LSTM sizes.
         \end{itemize}
       \end{exampleblock}
     \end{column}

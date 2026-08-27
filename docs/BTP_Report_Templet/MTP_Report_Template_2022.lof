@@ -1,0 +1,20 @@
+\babel@toc {english}{}\relax 
+\addvspace {10\p@ }
+\contentsline {xchapter}{Introduction}{1}{chapter.1}%
+\addvspace {10\p@ }
+\contentsline {xchapter}{Literature Survey}{3}{chapter.2}%
+\addvspace {10\p@ }
+\contentsline {xchapter}{Thesis Objectives and Deliverables}{5}{chapter.3}%
+\addvspace {10\p@ }
+\contentsline {xchapter}{System Architecture and Methodology}{7}{chapter.4}%
+\contentsline {figure}{\numberline {4.1}{\ignorespaces The Canonical LSTM processing pipeline for 24-hour stockout prediction.}}{8}{figure.caption.5}%
+\contentsline {figure}{\numberline {4.2}{\ignorespaces Integrated Gradients Heatmap revealing the disproportionate importance of recent inventory signals compared to historical static features.}}{9}{figure.caption.6}%
+\contentsline {figure}{\numberline {4.3}{\ignorespaces The Dual-Stream Inventory Shortcut LSTM Architecture. Notice the dashed shortcut preserving the $t=14$ state.}}{10}{figure.caption.8}%
+\contentsline {figure}{\numberline {4.4}{\ignorespaces The Standard DLinear Architecture. Trend and residual mapped via independent linear layers.}}{11}{figure.caption.9}%
+\contentsline {figure}{\numberline {4.5}{\ignorespaces The Multi-Kernel DLinear extraction phase. Multiple kernels capture volatility at different frequencies.}}{12}{figure.caption.10}%
+\addvspace {10\p@ }
+\contentsline {xchapter}{Tasks Completed}{13}{chapter.5}%
+\addvspace {10\p@ }
+\contentsline {xchapter}{Results and Conclusion}{15}{chapter.6}%
+\contentsline {figure}{\numberline {6.1}{\ignorespaces Final Empirical Comparison: The linear architectures systematically outperform the recurrent LSTM bounds.}}{16}{figure.caption.12}%
+\contentsline {figure}{\numberline {6.2}{\ignorespaces Broad comparison across model families, illustrating the parameter-efficiency dominance of DLinear variants on the FreshRetailNet-50K task.}}{17}{figure.caption.13}%
