@@ -253,29 +253,29 @@
 % ==========================================
 \begin{frame}{Limitations of Baseline LSTM}
   \begin{columns}[T]
-    \begin{column}{0.35\textwidth}
+    \begin{column}{0.48\textwidth}
       \centering
-      \vspace{0.3cm}
-      \includegraphics[width=\textwidth,keepaspectratio]{images/lstm_cell.pdf}\\
+      \includegraphics[width=\textwidth,height=4.8cm,keepaspectratio]{images/lstm_cell.pdf}\\
       \vspace{2pt}
       \tiny{Standard LSTM Cell Architecture}
     \end{column}
-    \begin{column}{0.62\textwidth}
+    \begin{column}{0.48\textwidth}
       \centering
-      \includegraphics[width=\textwidth,height=4.0cm,keepaspectratio]{images/normal_lstm_variations_comparison.png}\\
-      \vspace{1pt}
+      \includegraphics[width=\textwidth,height=4.8cm,keepaspectratio]{images/normal_lstm_variations_comparison.png}\\
+      \vspace{2pt}
       \tiny{F1-Score across LSTM hidden size variants (h=8 to h=96)}
-      \vspace{4pt}
-      \begin{alertblock}{Why Scaling Alone Doesn't Help}
-        \footnotesize
-        \begin{itemize}
-          \item \textbf{F1 plateau} at $\sim$0.789 regardless of hidden size --- more params yield no gain.
-          \item Demand \& inventory share hidden state $h_t$ $\Rightarrow$ \textbf{feature cross-talk}.
-          \item IG analysis (prev. slide) proves these signals need \textbf{dedicated streams}.
-        \end{itemize}
-      \end{alertblock}
     \end{column}
   \end{columns}
+  
+  \vspace{5pt}
+  \begin{alertblock}{Why Scaling Alone Doesn't Help}
+    \footnotesize
+    \begin{itemize}
+      \item \textbf{F1 plateau} at $\sim$0.789 regardless of hidden size --- more params yield no gain.
+      \item Demand \& inventory share hidden state $h_t$ $\Rightarrow$ potential for \textbf{feature interference}.
+      \item IG analysis (prev. slide) shows distinct temporal behaviors, motivating \textbf{dedicated streams}.
+    \end{itemize}
+  \end{alertblock}
 \end{frame}
 
 % ==========================================
