@@ -242,7 +242,7 @@
       \vspace{3pt}
       \begin{exampleblock}{\scriptsize Observation $\rightarrow$ Selection}
         \scriptsize
-        Out of all 11 features, IG reveals 6 features consistently dominate. Notably, \textbf{inventory features exhibit 7-day weekly seasonality}, while \textbf{demand features show a rapid 1--2 day velocity}. This motivates our feature reduction to 6 signals and the dual-stream split between demand \& inventory.
+        Absolute IG attribution for the exploratory 11-feature baseline (14-day history). The model relies most strongly on recent inventory and sales-related signals. This distinct temporal behavior motivates the Dual-Stream LSTM, which processes both groups independently before a fusion layer. Attribution indicates feature influence, not direct interaction or causality.
       \end{exampleblock}
     \end{column}
   \end{columns}
