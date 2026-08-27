@@ -24,7 +24,7 @@ data = [
     {"architecture": "Dual-Stream ResNet Shortcut", "category": "LSTM Family", "parameters": 4728, "f1_score": 0.7914, "gain": "+0.0017"},
     {"architecture": "Dual-Stream Inventory Shortcut", "category": "LSTM Family", "parameters": 4600, "f1_score": 0.7926, "gain": "+0.0029"},
     {"architecture": "Standard DLinear", "category": "Linear Family", "parameters": 6768, "f1_score": 0.7932, "gain": "+0.0035"},
-    {"architecture": "Hourly Slot-Specific DLinear 🏆", "category": "Linear Family (24 Heads)", "parameters": 6744, "f1_score": 0.8058, "gain": "+0.0161"},
+    {"architecture": "Hourly Slot-Specific DLinear [Peak]", "category": "Linear Family (24 Heads)", "parameters": 6744, "f1_score": 0.8058, "gain": "+0.0161"},
     {"architecture": "Multi-Kernel DLinear", "category": "Linear Family (Multi-Scale)", "parameters": 13539, "f1_score": 0.8131, "gain": "+0.0234"}
 ]
 

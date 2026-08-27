@@ -25,7 +25,7 @@ data = [
     {"architecture": "Hourly Slot Linear DLinear", "category": "Linear DLinear", "parameters": 6744, "f1_score": 0.8058, "recall": "88.02%", "type": "Linear"},
     {"architecture": "Hourly Slot Non-Linear DLinear", "category": "Non-Linear DLinear", "parameters": 109104, "f1_score": 0.8050, "recall": "86.70%", "type": "Non-Linear"},
     {"architecture": "Multi-Kernel Linear DLinear", "category": "Linear DLinear", "parameters": 13539, "f1_score": 0.8131, "recall": "85.22%", "type": "Linear"},
-    {"architecture": "Multi-Kernel Non-Linear DLinear 🏆", "category": "Non-Linear DLinear (Peak)", "parameters": 42339, "f1_score": 0.8156, "recall": "87.13%", "type": "Non-Linear (Top)"}
+    {"architecture": "Multi-Kernel Non-Linear DLinear [Peak]", "category": "Non-Linear DLinear (Peak)", "parameters": 42339, "f1_score": 0.8156, "recall": "87.13%", "type": "Non-Linear (Top)"}
 ]
 
 df = pd.DataFrame(data)

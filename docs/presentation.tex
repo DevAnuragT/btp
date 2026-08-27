@@ -255,18 +255,23 @@
   \end{block}
 
   \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
+    \begin{column}{0.48\textwidth}
       \begin{block}{DLinear Series Decomposition}
         $$X_{\text{trend}} = \text{AvgPool}(X), \quad X_{\text{seasonal}} = X - X_{\text{trend}}$$
         $$\mathbf{Y}_{\text{pred}} = W_{\text{trend}} X_{\text{trend}} + W_{\text{seasonal}} X_{\text{seasonal}}$$
       \end{block}
     \end{column}
     
-    \begin{column}{0.5\textwidth}
+    \begin{column}{0.48\textwidth}
       \begin{block}{Standard DLinear Performance}
         \begin{itemize}
           \item \textbf{Parameters}: 6,768 parameters.
-          \item \textbf{Validation F1-Score}: \textbf{0.7932} (Outperforms both Normal LSTMs and heavy Transformers).
+          \item \textbf{Validation F1-Score}: \textbf{0.7932}
+            \begin{itemize}
+              \item Outperforms Normal LSTMs (\textbf{0.7897})
+              \item Outperforms Enhanced LSTMs (\textbf{0.7926})
+              \item Outperforms Transformers (\textbf{0.7540})
+            \end{itemize}
           \item \textbf{Stockout Recall}: \textbf{87.44\%}.
         \end{itemize}
       \end{block}
@@ -275,25 +280,28 @@
 \end{frame}
 
 % ==========================================
-% SLIDE 10: ARCHITECTURAL INNOVATION 2: HOURLY SLOT DLINEAR
+% SLIDE 10: ARCHITECTURAL INNOVATION 2: LINEAR DLINEAR VARIATIONS
 % ==========================================
-\begin{frame}{Architectural Innovation 2: Hourly Slot-Specific DLinear}
+\begin{frame}{Architectural Innovation 2: Linear Changes in DLinear}
   \begin{columns}[T]
-    \begin{column}{0.55\textwidth}
+    \begin{column}{0.54\textwidth}
       \centering
       \includegraphics[width=\textwidth]{images/lstm_vs_dlinear_comparison.png}
     \end{column}
     
-    \begin{column}{0.42\textwidth}
-      \begin{block}{24 Dedicated Hourly Linear Heads}
-        Replaces flat matrix multiplication with 24 dedicated hourly linear heads ($W_1, W_2, \dots, W_{24}$):
-        $$\hat{y}_h = W_{\text{trend}, h} X_{\text{trend}} + W_{\text{seasonal}, h} X_{\text{seasonal}}$$
+    \begin{column}{0.43\textwidth}
+      \begin{block}{Hourly Slot-Specific Linear DLinear}
+        \begin{itemize}
+          \item Uses \textbf{24 dedicated linear heads} ($W_1, \dots, W_{24}$) for each operational hour.
+          \item Resolves inter-hour gradient conflict between morning and evening rush hours.
+          \item Boosts F1 to \textbf{0.8058} (+0.0161 over LSTM).
+        \end{itemize}
       \end{block}
       
-      \begin{block}{Performance Breakthrough}
+      \begin{block}{Multi-Kernel Linear DLinear}
         \begin{itemize}
-          \item \textbf{Hourly Slot DLinear}: \textbf{0.8058 F1-Score} \& \textbf{88.02\% Recall} (+0.0161 gain over baseline).
-          \item \textbf{Multi-Kernel DLinear}: \textbf{0.8131 F1-Score} ($k=3, 5, 7$ multi-scale pooling).
+          \item Multi-scale moving average trend pooling ($k \in \{3, 5, 7\}$).
+          \item Reaches \textbf{0.8131 F1-Score} with pure linear decomposition (13.5k params).
         \end{itemize}
       \end{block}
     \end{column}
@@ -301,21 +309,47 @@
 \end{frame}
 
 % ==========================================
-% SLIDE 11: DIAGRAMMATIC REPRESENTATION OF DLINEAR ARCHITECTURE
+% SLIDE 11: ARCHITECTURAL INNOVATION 3: NON-LINEAR DLINEAR MODELS
+% ==========================================
+\begin{frame}{Architectural Innovation 3: Introducing Non-Linearity into DLinear}
+  \begin{columns}[T]
+    \begin{column}{0.54\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{images/nonlinear_dlinear_comparison.png}
+    \end{column}
+    
+    \begin{column}{0.43\textwidth}
+      \begin{block}{Non-Linear Activation Bottleneck}
+        Adds GELU activation bottlenecks between decomposition and output projections:
+        $$\hat{Y} = W_{\text{trend}, 2} \text{GELU}(W_{\text{trend}, 1} X_{\text{trend}}) + \text{Seasonal}$$
+      \end{block}
+      
+      \begin{block}{Breakthrough Non-Linear Results}
+        \begin{itemize}
+          \item \textbf{Non-Linear GELU DLinear}: Reaches \textbf{91.37\% Stockout Recall} (Highest in Repo!) and \textbf{0.8083 F1}.
+          \item \textbf{Multi-Kernel Non-Linear DLinear}: Reaches \textbf{0.8156 F1-Score} (New Peak F1 \& lowest 3.75h MAE).
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ==========================================
+% SLIDE 12: DIAGRAMMATIC REPRESENTATION OF DLINEAR ARCHITECTURE
 % ==========================================
 \begin{frame}{Architectural Schematic: Multi-Kernel \& Slot DLinear}
   \begin{columns}[T]
-    \begin{column}{0.65\textwidth}
+    \begin{column}{0.62\textwidth}
       \centering
       \includegraphics[width=\textwidth]{images/dlinear_architecture_diagram.png}
     \end{column}
     
-    \begin{column}{0.33\textwidth}
+    \begin{column}{0.35\textwidth}
       \begin{block}{Core Mechanism}
         \begin{itemize}
-          \item \textbf{Trend Branch}: Multi-kernel moving average pooling ($k \in \{3, 5, 7\}$).
-          \item \textbf{Seasonal Branch}: Residual high-frequency shocks.
-          \item \textbf{24 Slot Heads}: $W_1, \dots, W_{24}$ resolve inter-hour gradient conflict between morning and evening rush hours.
+          \item \textbf{Trend Stream}: Multi-kernel moving average pooling ($k \in \{3, 5, 7\}$) + GELU bottleneck.
+          \item \textbf{Seasonal Stream}: High-frequency residual stockout shocks ($X - X_{\text{trend}}$).
+          \item \textbf{24 Slot Heads}: $W_1, \dots, W_{24}$ dedicated projections resolve inter-hour gradient conflicts.
         \end{itemize}
       \end{block}
     \end{column}
