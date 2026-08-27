@@ -30,9 +30,8 @@
 \setbeamertemplate{footline}[frame number]
 
 % Title Information
-\title[Next-Day 24-Hour Stock Status Prediction]{Next-Day 24-Hour Stock Status Prediction in Fresh Retail}
-\subtitle{Architectural Evolution from LSTMs to Non-Linear Multi-Kernel DLinear}
-\author[Anurag, Samyak, Vibhor]{Anurag Thakur \quad Samyak \quad Vibhor Kumar}
+\title[Next-Day Stock Status Prediction]{Next-Day Stock Status Prediction in Fresh Retail}
+\author[Anurag, Samyak Choudhary, Vibhor]{Anurag Thakur \quad Samyak Choudhary\quad Vibhor Kumar}
 \institute[BTP 2026]{Department of Information Technology\\Bachelor of Technology Project (BTP)}
 \date{August 2026}
 
@@ -49,6 +48,7 @@
 % SLIDE 2: PROBLEM STATEMENT & OBJECTIVE METRICS
 % ==========================================
 \begin{frame}{Problem Statement \& Objective Metrics}
+  \small
   \begin{columns}[T]
     \begin{column}{0.48\textwidth}
       \begin{block}{Operational Challenge in Fresh Retail}
@@ -60,8 +60,8 @@
       
       \begin{block}{Predictive Target Formulation}
         \begin{itemize}
-          \item Forecast a \textbf{24-dimensional binary hourly status vector}:
-            $$\mathbf{Y} = [y_1, y_2, \dots, y_{24}]^T \in \{0, 1\}^{24}$$
+          \item Forecast a \textbf{24-dim binary hourly status vector}:\\
+            $\mathbf{Y} = [y_1, y_2, \dots, y_{24}]^T \in \{0, 1\}^{24}$
           \item Covers active operational store hours (\textbf{6 AM to 10 PM}).
           \item $y_h = 1$ indicates SKU stockout during hour $h$.
         \end{itemize}
@@ -71,11 +71,8 @@
     \begin{column}{0.48\textwidth}
       \begin{exampleblock}{Key Objective Performance Metrics}
         \begin{itemize}
-          \item \textbf{Hour-Level F1-Score} (Primary Metric): Evaluates precision vs. recall on positive stockout hours:
-            $$F1 = \frac{2 \cdot P \cdot R}{P + R}$$
+          \item \textbf{Hour-Level F1-Score} (Primary Metric): Evaluates precision vs. recall on positive stockout hours: $F1 = \frac{2 \cdot P \cdot R}{P + R}$
           \item \textbf{Stockout Recall}: Measures percentage of true operational stockout hours correctly detected ($R = \frac{TP}{TP + FN}$).
-          \item \textbf{Exact 24-Hour Match Rate}: Proportion of days where all 24 hourly predictions match ground truth exactly.
-          \item \textbf{Mean Absolute Error (MAE)}: Average absolute error in total daily stockout duration (in hours).
         \end{itemize}
       \end{exampleblock}
     \end{column}
@@ -87,53 +84,88 @@
 % ==========================================
 \begin{frame}{Literature Review \& Related Work}
   \begin{block}{Taxonomy of Time-Series Forecasting Literature}
+    \small
     \begin{itemize}
       \item \textbf{Recurrent Sequence Memory} (Hochreiter \& Schmidhuber, 1997):
         \textit{LSTM} maintains persistent cell state memory $C_t$ for temporal sequence continuity.
-      \item \textbf{Limitations of Daily Aggregation} (Syntetos et al., 2016):
-        Traditional models predict coarse 1-day scalar demand, obscuring intraday stockout timing.
       \item \textbf{Deep Time-Series Transformers} (Lim et al., 2021 [TFT]; Zeng et al., 2023 [PatchTST]):
         Self-attention mechanisms suffer from \textbf{overparameterization ($>280\text{k}$ params)} on short sequences.
       \item \textbf{Linear Series Decomposition} (Zeng et al., 2023 [DLinear]; Challu et al., 2023 [N-HiTS]):
         Moving-average trend decomposition provides parameter-efficient baselines ($<15\text{k}$ params).
       \item \textbf{Explainable AI in Retail} (Sundararajan et al., 2017 [IG]; Lundberg \& Lee, 2017 [SHAP]):
         Attribution methods reveal feature-level importance to guide neural architecture design.
+      \item \textbf{FreshRetail Benchmark Studies} (Same Dataset):
+        Recent domain-specific works like \textit{"A Coupled Hierarchical Architecture for Multi-Granularity Demand Forecasting"} and \textit{"When Less Data Is Better: Eliminating Stockout-Induced Bias in Choice Estimation"} use this dataset to model complex stockout biases.
     \end{itemize}
   \end{block}
 \end{frame}
 
 % ==========================================
-% SLIDE 4: DATASET & SKU SELECTION STRATEGY
+% SLIDE 4: FRESHRETAILNET-50K DATASET OVERVIEW
 % ==========================================
-\begin{frame}{Data Selection Strategy: FreshRetailNet-50K \& SKU Scoring}
-  \begin{block}{Unit of Analysis}
-    Time series defined at individual SKU-store grain: 
-    $$\text{series\_id} = \text{city\_id} + \text{store\_id} + \text{product\_id}$$
-  \end{block}
-
+\begin{frame}{FreshRetailNet-50K Dataset Overview}
+  \small
   \begin{columns}[T]
-    \begin{column}{0.50\textwidth}
-      \begin{block}{Why Statistically Filter SKUs?}
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Dataset Scale \& Scope}
         \begin{itemize}
-          \item Large fresh retail datasets contain thousands of dormant SKUs.
-          \item We focus evaluation on \textbf{high-impact, stockout-prone SKUs} driving over 80\% of store revenue loss.
+          \item \textbf{Volume}: 50,000 store-product pairs across 898 stores.
+          \item \textbf{Timeframe}: 90-day series of highly granular hourly data.
+          \item \textbf{Products}: 865 diverse perishable SKUs.
         \end{itemize}
       \end{block}
     \end{column}
     
-    \begin{column}{0.46\textwidth}
-      \begin{block}{SKU Statistical Ranking Formula}
-        $$\begin{aligned}
-          \text{Score} &= 0.40 \cdot \text{Sales} + 0.25 \cdot \text{StockoutHours} \\
-          &+ 0.20 \cdot \text{StockoutDays} + 0.15 \cdot \text{SalesStd}
-        \end{aligned}$$
-      \end{block}
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Rich Feature Set}
+        \begin{itemize}
+          \item \textbf{Sales \& Stock}: Hourly sale amounts \& exact stock status.
+          \item \textbf{Events}: Discount rates, holiday flags, and activities.
+          \item \textbf{Weather}: Precipitation, temp, humidity, and wind.
+        \end{itemize}
+      \end{exampleblock}
     \end{column}
   \end{columns}
   
-  \vspace{4pt}
-  \centering
-  \small{\textbf{Selected Top 15 SKUs}: Represent high-turnover perishable items with high demand variance.}
+  \vspace{2pt}
+  \begin{alertblock}{Why We Selected This Dataset}
+    \begin{itemize}
+      \item \textbf{Pioneering Benchmark}: It is the first large-scale public dataset specifically designed for \textbf{censored demand estimation} (where out-of-stock items hide true customer demand) in the fresh retail domain.
+      \item \textbf{Perishable Goods Focus}: Perfectly captures the unique, rapid intraday volatility of short-shelf-life items, containing $\sim$20\% organically occurring stockout data.
+    \end{itemize}
+  \end{alertblock}
+\end{frame}
+
+% ==========================================
+% SLIDE 5: DATASET & SKU SELECTION STRATEGY
+% ==========================================
+\begin{frame}{Data Selection \& Splitting Strategy}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{Unit of Analysis \& Filtering}
+        \begin{itemize}
+          \item \textbf{Target Grain}: Predicted at the level of $\text{city\_id} + \text{store\_id} + \text{product\_id}$.
+          \item \textbf{Filtering Logic}: Fresh retail datasets contain thousands of dormant items. We select the \textbf{Top 15 SKUs} to focus on high-impact, stockout-prone goods.
+        \end{itemize}
+      \end{block}
+      
+      \begin{block}{SKU Statistical Ranking Formula}
+        \small
+        $\text{Score} = 0.40 \times \text{Sales} + 0.25 \times \text{Stockout Hours} \\ + 0.20 \times \text{Stockout Days} + 0.15 \times \text{Sales Std}$
+      \end{block}
+    \end{column}
+    
+    \begin{column}{0.48\textwidth}
+      \begin{exampleblock}{Train/Validation Split}
+        \begin{itemize}
+          \item \textbf{Chronological Split}: Strict temporal separation to prevent data leakage.
+          \item \textbf{Training Set}: Historical data up to $T_{\max} - 15$ days ($\sim 2.5$ months).
+          \item \textbf{Validation Set}: Final 15 days of data.
+          \item \textbf{Standardization}: \texttt{StandardScaler} fitted strictly on the training set to prevent lookahead bias.
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 % ==========================================
@@ -167,9 +199,10 @@
 % SLIDE 6: INITIAL BENCHMARK: LSTM VS TRANSFORMERS VS RNNS
 % ==========================================
 \begin{frame}{Model Family Comparison: Simple LSTMs Beat Heavy Transformers}
-  \begin{columns}[T]
+  \begin{columns}[c]
     \begin{column}{0.58\textwidth}
       \centering
+      \vspace{12pt}
       \includegraphics[width=\textwidth]{images/hourly_f1_vs_params_by_family.png}
     \end{column}
     
@@ -188,29 +221,30 @@
 % ==========================================
 % SLIDE 7: ML EXPLAINABILITY & SHAP/IG ANALYSIS
 % ==========================================
-\begin{frame}{ML Explainability: SHAP \& Integrated Gradients Analysis}
-  \begin{columns}[T]
-    \begin{column}{0.50\textwidth}
+\begin{frame}{ML Explainability: SHAP \& Integrated Gradients}
+  \begin{columns}[c]
+    \begin{column}{0.48\textwidth}
+      \small
       \begin{block}{Integrated Gradients (IG) Attribution}
         \begin{itemize}
-          \item Discovered that \textbf{Demand Signals} (sales amount, discounts) and \textbf{Inventory Signals} (stockout counts, rolling stockouts) act on different temporal scales.
-          \item Demand features exhibit fast 1--3 day velocity, while inventory features exhibit 7-day weekly seasonality.
+          \item \textbf{Demand Signals} (sales, discounts) and \textbf{Inventory Signals} (stockouts) act on different temporal scales.
+          \item Demand exhibits fast 1--3 day velocity; inventory exhibits 7-day weekly seasonality.
         \end{itemize}
       \end{block}
       
       \begin{alertblock}{Identification of Feature Cross-Talk}
         \begin{itemize}
-          \item Feeding demand \& inventory features into a single shared LSTM cell causes \textbf{gradient noise and interference}.
-          \item Inspired the design of \textbf{Dual-Stream Decoupling} to isolate demand and inventory features.
+          \item Feeding both signals into a single shared LSTM cell causes \textbf{gradient noise and interference}.
+          \item Inspired the \textbf{Dual-Stream Decoupling} design to cleanly isolate feature types.
         \end{itemize}
       \end{alertblock}
     \end{column}
     
-    \begin{column}{0.46\textwidth}
+    \begin{column}{0.48\textwidth}
       \centering
-      \includegraphics[width=0.95\textwidth]{images/explainability_flow.png}\\
-      \vspace{2pt}
-      \tiny{Figure 2: Integrated Gradients Feature \& Temporal Attribution Flow}
+      \includegraphics[width=\textwidth]{images/explainability_flow.png}\\
+      \vspace{4pt}
+      \scriptsize Figure 2: IG Feature \& Temporal Attribution Flow
     \end{column}
   \end{columns}
 \end{frame}
@@ -255,23 +289,18 @@
   \end{block}
 
   \begin{columns}[T]
-    \begin{column}{0.48\textwidth}
+    \begin{column}{0.5\textwidth}
       \begin{block}{DLinear Series Decomposition}
         $$X_{\text{trend}} = \text{AvgPool}(X), \quad X_{\text{seasonal}} = X - X_{\text{trend}}$$
         $$\mathbf{Y}_{\text{pred}} = W_{\text{trend}} X_{\text{trend}} + W_{\text{seasonal}} X_{\text{seasonal}}$$
       \end{block}
     \end{column}
     
-    \begin{column}{0.48\textwidth}
+    \begin{column}{0.5\textwidth}
       \begin{block}{Standard DLinear Performance}
         \begin{itemize}
           \item \textbf{Parameters}: 6,768 parameters.
-          \item \textbf{Validation F1-Score}: \textbf{0.7932}
-            \begin{itemize}
-              \item Outperforms Normal LSTMs (\textbf{0.7897})
-              \item Outperforms Enhanced LSTMs (\textbf{0.7926})
-              \item Outperforms Transformers (\textbf{0.7540})
-            \end{itemize}
+          \item \textbf{Validation F1-Score}: \textbf{0.7932} (Outperforms both Normal LSTMs and heavy Transformers).
           \item \textbf{Stockout Recall}: \textbf{87.44\%}.
         \end{itemize}
       \end{block}
